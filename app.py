@@ -9,22 +9,23 @@ import time
 st.set_page_config(page_title="PatiCheck", page_icon="🐾", layout="wide")
 
 # --- CONNECT TO DB ---
+# This looks for keys in Streamlit Secrets (We set this later)
 @st.cache_resource
 def init_supabase():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"] # This is the ANON key
-    return create_client(url, key)
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"] # This uses the ANON key
+        return create_client(url, key)
+    except:
+        return None
 
-try:
-    supabase = init_supabase()
-except:
-    st.stop()
+supabase = init_supabase()
 
-# --- CSS STYLING ---
+# --- CSS: DARK MODE & UI POLISH ---
 st.markdown("""
 <style>
     .stApp { background-color: #0E1117; }
-    h1, h2, h3, p, div, span, label, li { color: #E0E0E0 !important; }
+    h1, h2, h3, h4, h5, h6, p, div, span, li, label { color: #E0E0E0 !important; }
     .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div {
         background-color: #262730 !important; color: white !important;
     }
@@ -32,6 +33,10 @@ st.markdown("""
     .streamlit-expanderHeader { background-color: #262730 !important; color: white !important; border: 1px solid #444; }
 </style>
 """, unsafe_allow_html=True)
+
+if not supabase:
+    st.error("Lütfen Streamlit Secrets ayarlarını yapınız (SUPABASE_URL ve SUPABASE_KEY).")
+    st.stop()
 
 # --- AUTH LOGIC ---
 if "user" not in st.session_state:
@@ -49,10 +54,9 @@ def login(email, password):
 
 def register(email, password):
     try:
+        # Trigger handles profile creation automatically now
         res = supabase.auth.sign_up({"email": email, "password": password})
         if res.user:
-            # Save email to public table for the robot
-            supabase.table("profiles").insert({"id": res.user.id, "email": email}).execute()
             st.success("Kayıt Başarılı! Lütfen giriş yapın.")
     except Exception as e:
         st.error(f"Hata: {e}")
@@ -84,7 +88,7 @@ else:
     st.sidebar.title("🐾 PatiCheck")
     menu = st.sidebar.radio("Menü", ["Genel Bakış", "Yeni Kayıt"])
 
-    # Load Data (RLS filters this automatically)
+    # Load Data
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
@@ -93,7 +97,9 @@ else:
         if not df.empty:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"])
             df = df.sort_values("next_due_date")
-            for pet in df["pet_name"].unique():
+            pets = df["pet_name"].unique()
+
+            for pet in pets:
                 p_df = df[df["pet_name"] == pet]
                 due = p_df["next_due_date"].min()
                 days = (due.date() - date.today()).days
@@ -104,7 +110,8 @@ else:
 
                 with st.expander(f"{pet} | {status}"):
                     c1, c2 = st.columns(2)
-                    c1.metric("Son Kilo", f"{p_df.iloc[-1]['weight']} kg")
+                    last_weight = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
+                    c1.metric("Son Kilo", f"{last_weight} kg")
                     c1.metric("Sıradaki", p_df.iloc[0]['vaccine_type'])
                     
                     # Chart
