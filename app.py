@@ -20,21 +20,22 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: DESIGN SYSTEM (Inter Font + Soft Coral + Fixes) ---
+# --- CSS: DESIGN SYSTEM (FIXED) ---
 st.markdown("""
 <style>
     /* 1. IMPORT INTER FONT */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
     
-    /* 2. FORCE FONT GLOBALLY */
-    html, body, [class*="css"], font, span, div {
+    /* 2. APPLY FONT SAFELY */
+    /* We exclude 'material-icons' to prevent breaking the arrows */
+    html, body, [class*="css"], font, span, div, h1, h2, h3, h4, h5, h6, p {
         font-family: 'Inter', sans-serif !important;
     }
 
     /* 3. MAIN BACKGROUND */
     .stApp { background-color: #0E1117; }
     
-    /* 4. TEXT COLORS (Fixing Grey Issues) */
+    /* 4. TEXT COLORS */
     h1, h2, h3, h4, h5, h6, p, label { color: #F0F2F6 !important; }
     
     /* 5. SIDEBAR */
@@ -58,7 +59,7 @@ st.markdown("""
         background-color: #262730 !important; color: white !important; border: 1px solid #444 !important;
     }
 
-    /* 7. BUTTONS (Soft Coral) */
+    /* 7. BUTTONS */
     div.stButton > button {
         background-color: #FF6B6B !important; 
         color: white !important; 
@@ -72,24 +73,18 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(255,107,107,0.3); 
     }
 
-    /* 8. EXPANDER HEADER FIX (The Grey-on-Grey Killer) */
-    /* We target the summary element directly to override Streamlit defaults */
-    div[data-testid="stExpander"] > details > summary {
+    /* 8. EXPANDER HEADER FIX (The Cleanup) */
+    /* We style the container, but stop forcing specific styling on the icon */
+    .streamlit-expanderHeader {
         background-color: #262730 !important;
-        color: white !important;
         border: 1px solid #444;
         border-radius: 8px;
-        transition: border-color 0.2s;
-    }
-    div[data-testid="stExpander"] > details > summary:hover {
-        border-color: #FF6B6B !important;
-        color: #FF6B6B !important;
-    }
-    /* Fix the text inside the header specifically */
-    div[data-testid="stExpander"] > details > summary p {
         color: white !important;
-        font-weight: 600;
+    }
+    .streamlit-expanderHeader p {
         font-size: 16px;
+        font-weight: 600;
+        margin: 0;
     }
     div[data-testid="stExpander"] { border: none; }
 
@@ -163,7 +158,7 @@ if st.session_state["user"] is None:
                 register(ne, np)
 
 else:
-    # --- DASHBOARD ---
+    # --- LOGGED IN DASHBOARD ---
     with st.sidebar:
         st.write(f"👤 {st.session_state['user'].email}")
         if st.button("Çıkış Yap", use_container_width=True): logout()
@@ -198,7 +193,6 @@ else:
                 if days < 7: status = f"🚨 {days} Gün Kaldı!"
                 elif days < 30: status = f"⚠️ Yaklaşıyor ({days} Gün)"
 
-                # THE CARD
                 with st.expander(f"{pet} | {status}"):
                     c1, c2 = st.columns(2)
                     last_weight = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
@@ -207,10 +201,24 @@ else:
                     
                     st.write("---")
                     
+                    # SMART VET INFO LOGIC
+                    # Sort by most recent to find the latest note
+                    notes_df = p_df.sort_values("date_applied", ascending=False)
+                    # Filter out empty notes
+                    valid_notes = [n for n in notes_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
+                    
+                    if valid_notes:
+                        latest_note = valid_notes[0] # Take the most recent one
+                        st.info(f"ℹ️ **Veteriner / Not:** {latest_note}")
+                    else:
+                        st.caption("Henüz bir veteriner/not bilgisi girilmedi.")
+
+                    st.write("---")
+                    
                     # CHART
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
-                        st.caption(f"{pet} için kilo değişim grafiği (Tek kayıt varsa nokta olarak görünür).")
+                        st.caption(f"{pet} için kilo değişim grafiği.")
                         
                         chart_df = p_df.copy()
                         chart_df["date_applied"] = pd.to_datetime(chart_df["date_applied"])
@@ -228,7 +236,7 @@ else:
                             name='Kilo',
                             hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
                         ))
-                        # ADD REFERENCE LINE IF ONLY 1 DATA POINT
+                        # Ref Line for single point
                         if len(chart_df) == 1:
                             val = chart_df["weight"].iloc[0]
                             fig.add_hline(y=val, line_dash="dot", line_color="#444", annotation_text="Başlangıç", annotation_position="top right")
@@ -246,14 +254,10 @@ else:
                     
                     st.write("---")
                     
-                    # TABLE (With Vet Info)
-                    st.caption("📜 Geçmiş İşlemler & Notlar")
-                    # Check if 'notes' exists in dataframe (might be empty if new column)
-                    if "notes" not in p_df.columns:
-                        p_df["notes"] = ""
-                    
-                    disp = p_df[["vaccine_type", "next_due_date", "notes"]].copy()
-                    disp.columns = ["Yapılacak İşlem", "Tarih", "Not / Vet Bilgisi"]
+                    # TABLE (Updated Header)
+                    st.caption("📜 Geçmiş İşlemler")
+                    disp = p_df[["vaccine_type", "next_due_date"]].copy()
+                    disp.columns = ["Yapılan İşlem", "Tarih"] # FIXED HEADER
                     disp["Tarih"] = disp["Tarih"].dt.strftime('%d.%m.%Y')
                     st.dataframe(disp, hide_index=True, use_container_width=True)
 
@@ -274,18 +278,18 @@ else:
             w = st.number_input("Kilo (kg)", step=0.1)
 
         with c2:
-            d1 = st.date_input("Uygulama Tarihi")
+            d1 = st.date_input("Tarih")
             dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
             
-            # Logic
             if "Yıl" in dur: m = 12
             else: m = int(dur.split()[0])
             d2 = d1 + timedelta(days=m*30)
             
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
             
-            # VET INFO / NOTES
-            notes = st.text_area("Notlar / Veteriner Bilgisi", placeholder="Örn: Dr. Ali - City Vet (Tel: 05xx...)")
+            # NOTES (Optional)
+            notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", 
+                                 placeholder="Daha önce girdiyseniz boş bırakabilirsiniz. Sadece yeni bilgi varsa yazın.")
 
         if st.button("Kaydet", type="primary"):
             data = {
