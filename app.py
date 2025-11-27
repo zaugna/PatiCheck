@@ -20,33 +20,35 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: DESIGN SYSTEM (Inter Font + Soft Coral) ---
+# --- CSS: DESIGN SYSTEM (Inter Font + Soft Coral + Fixes) ---
 st.markdown("""
 <style>
-    /* Import Inter Font */
+    /* 1. IMPORT INTER FONT */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+    /* 2. FORCE FONT GLOBALLY */
+    html, body, [class*="css"], font, span, div {
+        font-family: 'Inter', sans-serif !important;
     }
 
-    /* Main Background */
+    /* 3. MAIN BACKGROUND */
     .stApp { background-color: #0E1117; }
     
-    /* Text Colors */
-    h1, h2, h3, h4, h5, h6, p, div, span, li, label { color: #F0F2F6 !important; }
+    /* 4. TEXT COLORS (Fixing Grey Issues) */
+    h1, h2, h3, h4, h5, h6, p, label { color: #F0F2F6 !important; }
     
-    /* BRAND COLOR: Soft Coral (#FF6B6B) */
-    
-    /* Sidebar */
+    /* 5. SIDEBAR */
     [data-testid="stSidebar"] { background-color: #1F2026 !important; }
     
-    /* Inputs */
-    .stTextInput input, .stNumberInput input, .stDateInput input {
-        background-color: #262730 !important; color: white !important; border: 1px solid #444 !important; border-radius: 8px;
+    /* 6. INPUTS & DROPDOWNS */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
+        background-color: #262730 !important; 
+        color: white !important; 
+        border: 1px solid #444 !important; 
+        border-radius: 8px;
     }
     
-    /* Dropdowns */
+    /* Dropdown Popups */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #262730 !important;
     }
@@ -56,31 +58,46 @@ st.markdown("""
         background-color: #262730 !important; color: white !important; border: 1px solid #444 !important;
     }
 
-    /* Buttons */
+    /* 7. BUTTONS (Soft Coral) */
     div.stButton > button {
-        background-color: #FF6B6B !important; color: white !important; border: none; font-weight: 600; border-radius: 8px;
+        background-color: #FF6B6B !important; 
+        color: white !important; 
+        border: none; 
+        font-weight: 600; 
+        border-radius: 8px;
         transition: all 0.2s ease;
     }
-    div.stButton > button:hover { background-color: #FF5252 !important; box-shadow: 0 4px 12px rgba(255,107,107,0.3); }
+    div.stButton > button:hover { 
+        background-color: #FF5252 !important; 
+        box-shadow: 0 4px 12px rgba(255,107,107,0.3); 
+    }
 
-    /* Cards (Expanders) - FIXING THE GREY HEADER */
-    div[data-testid="stExpander"] { background-color: transparent; border: none; }
-    .streamlit-expanderHeader { 
-        background-color: #262730 !important; 
-        color: white !important; 
-        border: 1px solid #444; 
+    /* 8. EXPANDER HEADER FIX (The Grey-on-Grey Killer) */
+    /* We target the summary element directly to override Streamlit defaults */
+    div[data-testid="stExpander"] > details > summary {
+        background-color: #262730 !important;
+        color: white !important;
+        border: 1px solid #444;
         border-radius: 8px;
+        transition: border-color 0.2s;
     }
-    .streamlit-expanderHeader:hover {
-        border-color: #FF6B6B !important; /* Glow effect on hover */
+    div[data-testid="stExpander"] > details > summary:hover {
+        border-color: #FF6B6B !important;
+        color: #FF6B6B !important;
     }
-    .streamlit-expanderHeader p { font-weight: 600; font-size: 16px; }
+    /* Fix the text inside the header specifically */
+    div[data-testid="stExpander"] > details > summary p {
+        color: white !important;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    div[data-testid="stExpander"] { border: none; }
 
-    /* Tables & Charts */
+    /* 9. TABLES & CHARTS */
     [data-testid="stDataFrame"] { background-color: #262730; border-radius: 8px; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     
-    /* Utilities */
+    /* 10. UTILITIES */
     div[data-testid="InputInstructions"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -130,12 +147,10 @@ if st.session_state["user"] is None:
     tab1, tab2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
     
     with tab1:
-        # WRAPPING IN FORM ENABLES ENTER KEY SUBMISSION
         with st.form("login_form"):
             e = st.text_input("Email")
             p = st.text_input("Şifre", type="password")
             st.write("") 
-            # form_submit_button is required inside form
             if st.form_submit_button("Giriş Yap", type="primary", use_container_width=True): 
                 login(e, p)
             
@@ -148,7 +163,7 @@ if st.session_state["user"] is None:
                 register(ne, np)
 
 else:
-    # --- LOGGED IN DASHBOARD ---
+    # --- DASHBOARD ---
     with st.sidebar:
         st.write(f"👤 {st.session_state['user'].email}")
         if st.button("Çıkış Yap", use_container_width=True): logout()
@@ -164,11 +179,9 @@ else:
         st.header("🐶🐱 Evcil Hayvan Profilleri")
         
         if df.empty:
-            # ONBOARDING (Empty State)
             st.container(border=True).markdown("""
             ### 👋 Hoşgeldin!
             Henüz bir kayıt bulunamadı.
-            
             Sağlık takibine başlamak için sol menüden **'Yeni Kayıt'** seçeneğine tıklayın.
             """)
         else:
@@ -185,6 +198,7 @@ else:
                 if days < 7: status = f"🚨 {days} Gün Kaldı!"
                 elif days < 30: status = f"⚠️ Yaklaşıyor ({days} Gün)"
 
+                # THE CARD
                 with st.expander(f"{pet} | {status}"):
                     c1, c2 = st.columns(2)
                     last_weight = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
@@ -193,10 +207,10 @@ else:
                     
                     st.write("---")
                     
-                    # CHART WITH EXPLANATION
+                    # CHART
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
-                        st.caption(f"{pet} isimli dostunuzun zaman içindeki kilo değişim grafiği.")
+                        st.caption(f"{pet} için kilo değişim grafiği (Tek kayıt varsa nokta olarak görünür).")
                         
                         chart_df = p_df.copy()
                         chart_df["date_applied"] = pd.to_datetime(chart_df["date_applied"])
@@ -207,13 +221,18 @@ else:
                             x=chart_df["date_applied"], 
                             y=chart_df["weight"],
                             mode='lines+markers',
-                            line=dict(color='#FF6B6B', width=3, shape='spline'), # Using Brand Color
+                            line=dict(color='#FF6B6B', width=3, shape='spline'),
                             marker=dict(size=8, color='#0E1117', line=dict(color='#FF6B6B', width=2)),
                             fill='tozeroy',
                             fillcolor='rgba(255, 107, 107, 0.1)',
                             name='Kilo',
-                            hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>' # Cleaner Tooltip
+                            hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
                         ))
+                        # ADD REFERENCE LINE IF ONLY 1 DATA POINT
+                        if len(chart_df) == 1:
+                            val = chart_df["weight"].iloc[0]
+                            fig.add_hline(y=val, line_dash="dot", line_color="#444", annotation_text="Başlangıç", annotation_position="top right")
+
                         fig.update_layout(
                             height=250, 
                             margin=dict(t=10,b=0,l=0,r=0), 
@@ -226,18 +245,20 @@ else:
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                     
                     st.write("---")
-                    # Table
-                    disp = p_df[["vaccine_type", "next_due_date"]].copy()
-                    disp.columns = ["Yapılacak İşlem", "Tarih"]
-                    # Format date in table
+                    
+                    # TABLE (With Vet Info)
+                    st.caption("📜 Geçmiş İşlemler & Notlar")
+                    # Check if 'notes' exists in dataframe (might be empty if new column)
+                    if "notes" not in p_df.columns:
+                        p_df["notes"] = ""
+                    
+                    disp = p_df[["vaccine_type", "next_due_date", "notes"]].copy()
+                    disp.columns = ["Yapılacak İşlem", "Tarih", "Not / Vet Bilgisi"]
                     disp["Tarih"] = disp["Tarih"].dt.strftime('%d.%m.%Y')
                     st.dataframe(disp, hide_index=True, use_container_width=True)
 
     elif menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
-        
-        # New Feature: If you have images, you can uncomment this line later
-        # st.image("assets/banner.png", use_column_width=True)
         
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
@@ -249,20 +270,29 @@ else:
             
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
+            
             w = st.number_input("Kilo (kg)", step=0.1)
 
         with c2:
-            d1 = st.date_input("Tarih")
+            d1 = st.date_input("Uygulama Tarihi")
             dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
-            m = 12 if "Yıl" in dur else int(dur.split()[0])
+            
+            # Logic
+            if "Yıl" in dur: m = 12
+            else: m = int(dur.split()[0])
             d2 = d1 + timedelta(days=m*30)
+            
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
+            
+            # VET INFO / NOTES
+            notes = st.text_area("Notlar / Veteriner Bilgisi", placeholder="Örn: Dr. Ali - City Vet (Tel: 05xx...)")
 
         if st.button("Kaydet", type="primary"):
             data = {
                 "user_id": st.session_state["user"].id,
                 "pet_name": pet, "vaccine_type": vac,
-                "date_applied": str(d1), "next_due_date": str(d2), "weight": w
+                "date_applied": str(d1), "next_due_date": str(d2), "weight": w,
+                "notes": notes
             }
             supabase.table("vaccinations").insert(data).execute()
             st.success("✅ Kayıt Başarıyla Eklendi!")
