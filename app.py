@@ -20,39 +20,26 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: SURGICAL FIXES (Protects Icons, Fixes Colors) ---
+# --- CSS: THE STABLE & CLEAN VERSION ---
 st.markdown("""
 <style>
     /* 1. IMPORT INTER FONT */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
     
-    /* 2. APPLY FONT SAFELY (Exclude icons) */
-    html, body, h1, h2, h3, h4, h5, h6, p, div, label, span, button, input {
-        font-family: 'Inter', sans-serif !important;
-    }
-    /* Protect Material Icons (The arrows) from font overrides */
-    i, .material-icons {
-        font-family: 'Material Icons' !important;
-    }
-
-    /* 3. MAIN BACKGROUND */
+    /* 2. MAIN BACKGROUND */
     .stApp { background-color: #0E1117; }
-    
-    /* 4. TEXT COLORS (High Contrast) */
-    h1, h2, h3, h4, h5, h6, p, label, li { color: #E0E0E0 !important; }
-    
-    /* 5. METRICS (Fixing the Grey-on-Grey issue) */
-    [data-testid="stMetricValue"] {
-        color: #FFFFFF !important; /* Bright White for numbers */
-    }
-    [data-testid="stMetricLabel"] {
-        color: #B0B0B0 !important; /* Light Grey for labels */
+
+    /* 3. SAFE FONT APPLICATION */
+    /* We ONLY target text tags. We DO NOT target 'div' or 'span' generically to protect icons. */
+    h1, h2, h3, h4, h5, h6, p, a, button, input, label, li, textarea {
+        font-family: 'Inter', sans-serif !important;
+        color: #E0E0E0 !important;
     }
 
-    /* 6. SIDEBAR */
+    /* 4. SIDEBAR STYLING */
     [data-testid="stSidebar"] { background-color: #1F2026 !important; }
     
-    /* 7. INPUTS */
+    /* 5. INPUT FIELDS (Dark & Clean) */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
         background-color: #262730 !important; 
         color: white !important; 
@@ -60,17 +47,41 @@ st.markdown("""
         border-radius: 8px;
     }
     
-    /* 8. DROPDOWNS */
+    /* 6. DROPDOWN MENUS (Fixing the White Popups) */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #262730 !important;
     }
-    li[role="option"] { background-color: #262730 !important; color: white !important; }
-    li[role="option"]:hover { background-color: #FF6B6B !important; color: white !important; }
+    li[role="option"] {
+        background-color: #262730 !important;
+        color: white !important;
+    }
+    li[role="option"]:hover {
+        background-color: #FF6B6B !important;
+        color: white !important;
+    }
+    /* The selected box */
     div[data-baseweb="select"] > div {
-        background-color: #262730 !important; color: white !important; border-color: #444 !important;
+        background-color: #262730 !important;
+        color: white !important;
+        border-color: #444 !important;
     }
 
-    /* 9. BUTTONS */
+    /* 7. METRICS (Fixing Unreadable Dates) */
+    /* Value (The big number/text) */
+    [data-testid="stMetricValue"] div {
+        color: #FFFFFF !important;
+    }
+    /* Delta (The small date text below) - FORCE READABILITY */
+    [data-testid="stMetricDelta"] div {
+        color: #A0A0A0 !important; /* Light Grey */
+        font-weight: bold;
+    }
+    /* Label (The title above the number) */
+    [data-testid="stMetricLabel"] label {
+        color: #FF6B6B !important; /* Brand Color */
+    }
+
+    /* 8. BUTTONS (Brand Red) */
     div.stButton > button {
         background-color: #FF6B6B !important; 
         color: white !important; 
@@ -78,23 +89,30 @@ st.markdown("""
         font-weight: 600; 
         border-radius: 8px;
     }
-    div.stButton > button:hover { background-color: #FF5252 !important; }
+    div.stButton > button:hover { 
+        background-color: #FF5252 !important; 
+    }
 
-    /* 10. EXPANDER HEADER FIX */
+    /* 9. EXPANDER (Card) STABILITY FIX */
+    /* Instead of forcing background colors that break icons, we use a clean border */
     .streamlit-expanderHeader {
-        background-color: #262730 !important;
-        border: 1px solid #444;
+        background-color: #1F2026 !important;
+        border: 1px solid #333;
         border-radius: 8px;
         color: white !important;
     }
-    /* Force text inside header to be white */
-    .streamlit-expanderHeader p { color: white !important; font-size: 16px; font-weight: 600; }
-    div[data-testid="stExpander"] { border: none; }
+    .streamlit-expanderHeader p {
+        font-size: 16px;
+        font-weight: 600;
+    }
+    div[data-testid="stExpander"] {
+        border: none;
+    }
 
-    /* 11. UTILITIES */
-    [data-testid="stDataFrame"] { background-color: #262730; border-radius: 8px; }
-    div[data-testid="InputInstructions"] { display: none !important; }
+    /* 10. PLOTLY & UTILS */
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
+    div[data-testid="InputInstructions"] { display: none !important; }
+    [data-testid="stDataFrame"] { background-color: #262730; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -157,6 +175,7 @@ if st.session_state["user"] is None:
                 register(ne, np)
 
 else:
+    # --- LOGGED IN DASHBOARD ---
     with st.sidebar:
         st.write(f"👤 {st.session_state['user'].email}")
         if st.button("Çıkış Yap", use_container_width=True): logout()
@@ -180,27 +199,24 @@ else:
             for pet in pets:
                 p_df = df[df["pet_name"] == pet]
                 
-                # --- LOGIC: MULTIPLE UPCOMING VACCINES ---
+                # --- LOGIC: UPCOMING VACCINES ---
                 today = date.today()
-                # Find the absolute closest date
                 closest_date = p_df["next_due_date"].min()
                 days_until = (closest_date.date() - today).days
                 
-                # Determine Status Color
                 status = "✅ Durum İyi"
                 if days_until < 7: status = f"🚨 {days_until} Gün Kaldı!"
                 elif days_until < 30: status = f"⚠️ Yaklaşıyor ({days_until} Gün)"
 
-                # Find ALL vaccines due on that closest date (or within the next 30 days)
+                # Logic for multiple upcoming vaccines
                 future_vax = p_df[p_df["next_due_date"] >= pd.Timestamp(today)]
                 if not future_vax.empty:
-                    # Sort to get closest
                     future_vax = future_vax.sort_values("next_due_date")
-                    # Take the top 2-3 unique vaccine names
-                    next_names = future_vax["vaccine_type"].unique()[:2] 
-                    next_vax_str = ", ".join(next_names)
-                    if len(future_vax["vaccine_type"].unique()) > 2:
-                        next_vax_str += "..."
+                    # Grab unique names to avoid "Karma, Karma"
+                    unique_future = future_vax["vaccine_type"].unique()
+                    # Show first 2
+                    next_vax_str = ", ".join(unique_future[:2])
+                    if len(unique_future) > 2: next_vax_str += "..."
                 else:
                     next_vax_str = "Planlanan Aşı Yok"
 
@@ -208,13 +224,14 @@ else:
                 with st.expander(f"{pet} | {status}"):
                     c1, c2 = st.columns(2)
                     last_weight = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
+                    
                     c1.metric("Son Kilo", f"{last_weight} kg")
-                    # Updated Metric to show potentially multiple vaccines
-                    c2.metric("Sıradaki İşlemler", next_vax_str, delta=f"{closest_date.strftime('%d.%m.%Y')}", delta_color="off")
+                    # We pass the Date as the "delta" but force its color with CSS
+                    c2.metric("Sıradaki İşlemler", next_vax_str, delta=f"Tarih: {closest_date.strftime('%d.%m.%Y')}", delta_color="off")
                     
                     st.write("---")
                     
-                    # SMART VET INFO
+                    # VET INFO
                     notes_df = p_df.sort_values("date_applied", ascending=False)
                     valid_notes = [n for n in notes_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
                     if valid_notes:
@@ -243,6 +260,7 @@ else:
                             name='Kilo',
                             hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
                         ))
+                        # Ref Line for single point
                         if len(chart_df) == 1:
                             val = chart_df["weight"].iloc[0]
                             fig.add_hline(y=val, line_dash="dot", line_color="#444", annotation_text="Başlangıç", annotation_position="top right")
@@ -269,6 +287,7 @@ else:
 
     elif menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
+        
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
         opts = existing_pets + ["➕ Yeni Ekle..."]
@@ -279,6 +298,7 @@ else:
             
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
+            
             w = st.number_input("Kilo (kg)", step=0.1)
 
         with c2:
@@ -292,7 +312,7 @@ else:
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
             
             notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", 
-                                 placeholder="Daha önce girdiyseniz boş bırakabilirsiniz. Sadece yeni bilgi varsa yazın.")
+                                 placeholder="Sadece yeni bilgi varsa yazın.")
 
         if st.button("Kaydet", type="primary"):
             data = {
