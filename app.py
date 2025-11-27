@@ -9,33 +9,59 @@ import time
 st.set_page_config(page_title="PatiCheck", page_icon="🐾", layout="wide")
 
 # --- CONNECT TO DB ---
-# This looks for keys in Streamlit Secrets (We set this later)
 @st.cache_resource
 def init_supabase():
     try:
         url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"] # This uses the ANON key
+        key = st.secrets["SUPABASE_KEY"] # ANON KEY
         return create_client(url, key)
     except:
         return None
 
 supabase = init_supabase()
 
-# --- CSS: DARK MODE & UI POLISH ---
+# --- CSS: THE "NUKE" DARK MODE & UI FIXES ---
 st.markdown("""
 <style>
+    /* 1. Main Background */
     .stApp { background-color: #0E1117; }
+    
+    /* 2. Text Colors */
     h1, h2, h3, h4, h5, h6, p, div, span, li, label { color: #E0E0E0 !important; }
+    
+    /* 3. Inputs (Dark Background) */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div {
-        background-color: #262730 !important; color: white !important;
+        background-color: #262730 !important; color: white !important; border-color: #444 !important;
     }
+    
+    /* 4. FIX: HIDE "PRESS ENTER TO APPLY" */
+    /* This removes the overlapping text in password fields */
+    div[data-testid="InputInstructions"] { display: none !important; }
+
+    /* 5. FIX: BUTTONS */
+    /* Forces primary buttons to be Red and readable */
+    div.stButton > button {
+        background-color: #FF4B4B !important;
+        color: white !important;
+        border: none;
+        font-weight: bold;
+    }
+    div.stButton > button:hover {
+        background-color: #FF2B2B !important;
+    }
+
+    /* 6. Cards & Tables */
     div[data-testid="stExpander"] { background-color: transparent; border: none; }
     .streamlit-expanderHeader { background-color: #262730 !important; color: white !important; border: 1px solid #444; }
+    [data-testid="stDataFrame"] { background-color: #262730; }
+    
+    /* 7. Plotly Chart Background Fix */
+    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
 </style>
 """, unsafe_allow_html=True)
 
 if not supabase:
-    st.error("Lütfen Streamlit Secrets ayarlarını yapınız (SUPABASE_URL ve SUPABASE_KEY).")
+    st.error("Lütfen Streamlit Secrets ayarlarını yapınız.")
     st.stop()
 
 # --- AUTH LOGIC ---
@@ -47,19 +73,26 @@ def login(email, password):
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         st.session_state["user"] = res.user
         st.success("Giriş Başarılı!")
-        time.sleep(1)
+        time.sleep(0.5)
         st.rerun()
     except Exception as e:
-        st.error(f"Hata: {e}")
+        st.error(f"Giriş Hatası: {e}")
 
 def register(email, password):
     try:
-        # Trigger handles profile creation automatically now
+        # Trigger handles profile creation automatically
         res = supabase.auth.sign_up({"email": email, "password": password})
+        
+        # Logic Update: If email confirmation is OFF, user is logged in immediately.
+        # If ON, they need to check email. 
+        # Since we turned it OFF for UX, we check if we got a user object.
         if res.user:
-            st.success("Kayıt Başarılı! Lütfen giriş yapın.")
+            st.session_state["user"] = res.user
+            st.success("Kayıt Başarılı! Giriş yapılıyor...")
+            time.sleep(1)
+            st.rerun()
     except Exception as e:
-        st.error(f"Hata: {e}")
+        st.error(f"Kayıt Hatası: {e}")
 
 def logout():
     supabase.auth.sign_out()
@@ -69,15 +102,24 @@ def logout():
 # --- APP FLOW ---
 if st.session_state["user"] is None:
     st.title("🐾 PatiCheck: Giriş")
+    
+    # LOGIN / REGISTER TABS
     tab1, tab2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
+    
     with tab1:
         e = st.text_input("Email", key="l_email")
         p = st.text_input("Şifre", type="password", key="l_pass")
-        if st.button("Giriş", type="primary"): login(e, p)
+        st.write("") 
+        # type="primary" makes it red by default, CSS ensures it stays red
+        if st.button("Giriş Yap", type="primary", use_container_width=True): 
+            login(e, p)
+            
     with tab2:
         ne = st.text_input("Email", key="r_email")
         np = st.text_input("Şifre", type="password", key="r_pass")
-        if st.button("Kayıt Ol"): register(ne, np)
+        st.write("")
+        if st.button("Kayıt Ol", type="primary", use_container_width=True): 
+            register(ne, np)
 
 else:
     # --- LOGGED IN DASHBOARD ---
@@ -114,16 +156,20 @@ else:
                     c1.metric("Son Kilo", f"{last_weight} kg")
                     c1.metric("Sıradaki", p_df.iloc[0]['vaccine_type'])
                     
-                    # Chart
                     if len(p_df) > 1:
+                        # Chart Logic
+                        chart_df = p_df.copy()
+                        chart_df["date_applied"] = pd.to_datetime(chart_df["date_applied"])
+                        chart_df = chart_df.sort_values("date_applied")
+
                         fig = go.Figure()
-                        fig.add_trace(go.Scatter(x=p_df["date_applied"], y=p_df["weight"], 
+                        fig.add_trace(go.Scatter(x=chart_df["date_applied"], y=chart_df["weight"], 
                             mode='lines+markers', line=dict(color='#FF4B4B', shape='spline'), fill='tozeroy'))
                         fig.update_layout(height=200, margin=dict(t=0,b=0,l=0,r=0), 
-                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                        st.plotly_chart(fig, use_container_width=True)
+                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#262730'))
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                     
-                    # Table
                     disp = p_df[["vaccine_type", "next_due_date"]].copy()
                     disp.columns = ["Aşı", "Tarih"]
                     st.dataframe(disp, hide_index=True, use_container_width=True)
