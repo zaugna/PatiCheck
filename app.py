@@ -20,7 +20,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS ---
+# --- CSS: DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -103,8 +103,10 @@ def resend_confirmation(email):
 
 def reset_password(email):
     try:
+        # Standard reset flow
         supabase.auth.reset_password_email(email, options={"redirect_to": "https://paticheck.streamlit.app"})
-        st.success("Şifre sıfırlama linki email adresinize gönderildi (Spam klasörünü kontrol edin).")
+        st.success("Şifre sıfırlama linki gönderildi. Linke tıkladıktan sonra otomatik giriş yapacaksınız.")
+        st.info("Giriş yaptıktan sonra 'Ayarlar' menüsünden yeni şifrenizi belirlemeyi unutmayın!")
     except Exception as e:
         st.error(f"Hata: {e}")
 
@@ -120,19 +122,18 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --- STATE MANAGEMENT (Navigation & Form Clearing) ---
-if 'sb_menu' not in st.session_state:
-    st.session_state.sb_menu = "Anasayfa"
+# --- STATE & NAVIGATION (FIXED) ---
+# We use a page_index to control the radio button safely
+if 'page_index' not in st.session_state:
+    st.session_state.page_index = 0
 
-def navigate_to(page):
-    st.session_state.sb_menu = page
+def set_page(index):
+    st.session_state.page_index = index
 
 def clear_new_entry_form():
-    # Reset specific keys used in the 'Yeni Kayıt' form
     st.session_state['input_pet'] = ""
-    st.session_state['input_weight'] = None # Clears the number box
+    st.session_state['input_weight'] = None
     st.session_state['input_notes'] = ""
-    # We can default the selectbox to index 0, but clearing the text inputs is most important
 
 # --- DATA LOGIC ---
 def update_entries(edited_df):
@@ -191,25 +192,41 @@ else:
     
     st.sidebar.title("🐾 PatiCheck")
     
-    # NAVIGATION MENU (Controlled by Session State)
-    menu = st.sidebar.radio("Menü", ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt", "Ayarlar"], key="sb_menu")
+    # NAVIGATION MENU (Index Controlled)
+    menu_options = ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt", "Ayarlar"]
+    
+    # Ensure index is valid
+    if st.session_state.page_index >= len(menu_options):
+        st.session_state.page_index = 0
+        
+    selected_menu = st.sidebar.radio("Menü", menu_options, index=st.session_state.page_index)
 
+    # Logic: If user clicked radio manually, update index for next time
+    # This keeps buttons and radio in sync
+    new_index = menu_options.index(selected_menu)
+    if new_index != st.session_state.page_index:
+        st.session_state.page_index = new_index
+        st.rerun()
+
+    # Load Data
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
     # --- 1. HOME (DASHBOARD) ---
-    if menu == "Anasayfa":
+    if selected_menu == "Anasayfa":
         st.header("👋 Hoşgeldiniz!")
         
         if df.empty:
             st.info("Henüz bir kayıt oluşturmadınız.")
             if st.button("➕ İlk Kaydınızı Oluşturun", type="primary"):
-                navigate_to("Yeni Kayıt")
+                set_page(2) # Index of 'Yeni Kayıt'
                 st.rerun()
         else:
+            # Safe Date Conversion
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
-            today = date.today()
+            df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
             
+            today = date.today()
             col1, col2, col3 = st.columns(3)
             pet_count = df["pet_name"].nunique()
             col1.metric("Evcil Hayvan", f"{pet_count} Adet")
@@ -222,15 +239,15 @@ else:
             
             st.write("---")
             
-            # ACTION BUTTONS
+            # ACTION BUTTONS (SAFE NAVIGATION)
             c1, c2 = st.columns(2)
             with c1:
                 if st.button("📋 Kayıtları İncele", use_container_width=True):
-                    navigate_to("Evcil Hayvanlar")
+                    set_page(1) # Index of 'Evcil Hayvanlar'
                     st.rerun()
             with c2:
                 if st.button("➕ Yeni Aşı Ekle", type="primary", use_container_width=True):
-                    navigate_to("Yeni Kayıt")
+                    set_page(2) # Index of 'Yeni Kayıt'
                     st.rerun()
 
             st.subheader("⚠️ Durum Özeti")
@@ -244,12 +261,13 @@ else:
                 st.success("Harika! Yakın zamanda yapılması gereken bir işlem görünmüyor.")
 
     # --- 2. PET PROFILES ---
-    elif menu == "Evcil Hayvanlar":
+    elif selected_menu == "Evcil Hayvanlar":
         st.header("🐶🐱 Profil ve Geçmiş")
         
         if df.empty:
             st.info("Kayıt yok.")
         else:
+            # Re-convert here to be safe for this view's logic
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
             df = df.sort_values("next_due_date")
@@ -321,10 +339,12 @@ else:
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                     
                     st.write("---")
+                    
                     st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye tıklayın)")
+                    edit_df = p_df.copy()
                     
                     edited_data = st.data_editor(
-                        p_df,
+                        edit_df,
                         column_config={
                             "id": None, "user_id": None, "created_at": None,
                             "pet_name": st.column_config.TextColumn("İsim", disabled=True),
@@ -341,8 +361,13 @@ else:
                             update_entries(edited_data)
 
     # --- 3. NEW ENTRY ---
-    elif menu == "Yeni Kayıt":
+    elif selected_menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
+        
+        # Keys for clearing
+        if 'input_pet' not in st.session_state: st.session_state['input_pet'] = ""
+        if 'input_weight' not in st.session_state: st.session_state['input_weight'] = None
+        if 'input_notes' not in st.session_state: st.session_state['input_notes'] = ""
         
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
@@ -350,22 +375,25 @@ else:
         
         with c1:
             sel = st.selectbox("Evcil Hayvan", opts)
-            # Use specific key to allow clearing
-            if 'input_pet' not in st.session_state: st.session_state['input_pet'] = ""
             
-            # If user selected "Add New", show text box. Else use selection.
+            # Logic: If 'Add New', use text input. Else, use the selection.
+            # We must handle the input_pet state carefully.
             if sel == "➕ Yeni Ekle...":
                 pet = st.text_input("İsim", key="input_pet")
             else:
                 pet = sel
-                # Update text input state so it doesn't stay populated if they switch back
-                st.session_state['input_pet'] = pet 
+                # Keep the text input sync in case they toggle back and forth, 
+                # but for now 'pet' variable holds the correct value
             
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
             
-            # WEIGHT INPUT (Cleared via Key)
-            w = st.number_input("Kilo (kg)", step=0.1, key="input_weight", value=None, placeholder="0.0")
+            # Weight
+            w = st.number_input("Kilo (kg) - Sadece rakam", step=0.1, key="input_weight", value=None, placeholder="0.0")
+            
+            if st.button("Kilo Sıfırla"):
+                st.session_state.input_weight = None
+                st.rerun()
 
         with c2:
             d1 = st.date_input("Uygulama Tarihi")
@@ -382,36 +410,34 @@ else:
                 
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
             
-            # NOTES (Cleared via Key)
             notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", key="input_notes", placeholder="Sadece yeni bilgi varsa yazın.")
 
         if st.button("Kaydet", type="primary"):
-            # Use selection or text input based on state
-            final_pet_name = st.session_state.input_pet if sel == "➕ Yeni Ekle..." else sel
+            final_pet = st.session_state.input_pet if sel == "➕ Yeni Ekle..." else sel
             
-            if not final_pet_name:
-                st.warning("Lütfen evcil hayvan ismi girin.")
+            if not final_pet:
+                st.warning("Lütfen bir isim girin.")
             else:
                 final_w = w if w is not None else 0.0
                 data = {
                     "user_id": st.session_state["user"].id,
-                    "pet_name": final_pet_name, "vaccine_type": vac,
+                    "pet_name": final_pet, "vaccine_type": vac,
                     "date_applied": str(d1), "next_due_date": str(d2), "weight": final_w,
                     "notes": notes
                 }
                 supabase.table("vaccinations").insert(data).execute()
                 st.success("✅ Kayıt Başarıyla Eklendi!")
                 
-                # CLEAR FORM LOGIC
+                # Clear Form
                 clear_new_entry_form()
-                
                 time.sleep(0.5)
                 st.rerun()
 
-    # --- 4. SETTINGS (Password Reset) ---
-    elif menu == "Ayarlar":
+    # --- 4. SETTINGS ---
+    elif selected_menu == "Ayarlar":
         st.header("⚙️ Ayarlar")
         st.subheader("Şifre Değiştir")
+        st.info("Şifre sıfırlama linkine tıkladıysanız buradan yeni şifrenizi belirleyebilirsiniz.")
         
         with st.form("pwd_form"):
             new_pass = st.text_input("Yeni Şifre", type="password")
