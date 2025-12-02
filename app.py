@@ -68,7 +68,7 @@ if not supabase:
 
 # --- STATE INITIALIZATION ---
 if "user" not in st.session_state: st.session_state["user"] = None
-if "otp_mode" not in st.session_state: st.session_state["otp_mode"] = "input_email" # State Machine: input_email -> input_code
+if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
 # Input Keys for Form Clearing
@@ -76,10 +76,29 @@ if "input_weight" not in st.session_state: st.session_state.input_weight = None
 if "input_pet" not in st.session_state: st.session_state.input_pet = ""
 if "input_notes" not in st.session_state: st.session_state.input_notes = ""
 
-# --- CALLBACKS (CRITICAL: Runs BEFORE Rerun) ---
+# Navigation & Prefill State
+if 'page_index' not in st.session_state: st.session_state.page_index = 0
+if 'prefill_pet_name' not in st.session_state: st.session_state.prefill_pet_name = None
+
+# --- CALLBACKS ---
+def clear_form_callback():
+    st.session_state.input_weight = None
+    st.session_state.input_pet = ""
+    st.session_state.input_notes = ""
+    # Clear prefill so it doesn't stick forever
+    st.session_state.prefill_pet_name = None
+
+def set_page_callback(index):
+    st.session_state.page_index = index
+
+def smart_redirect_callback(pet_name):
+    # 1. Switch to 'Yeni Kayıt' tab (Index 2)
+    st.session_state.page_index = 2
+    # 2. Set the pet name to pre-select
+    st.session_state.prefill_pet_name = pet_name
+
 def save_entry_callback(user_id, pet_sel, pet_text, vac, d1, d2, w, notes):
     try:
-        # Determine Pet Name
         final_pet = pet_text if pet_sel == "➕ Yeni Ekle..." else pet_sel
         if not final_pet:
             st.error("Lütfen bir isim girin.")
@@ -99,12 +118,9 @@ def save_entry_callback(user_id, pet_sel, pet_text, vac, d1, d2, w, notes):
         supabase.table("vaccinations").insert(data).execute()
         st.success("✅ Kayıt Başarıyla Eklendi!")
         
-        # CLEAR FORM SAFELY (Modify State Here)
-        st.session_state.input_weight = None
-        st.session_state.input_pet = ""
-        st.session_state.input_notes = ""
-        # We assume the user stays on the page to add another or sees the success message
-        
+        clear_form_callback()
+        time.sleep(0.5)
+        # We don't use st.rerun in callbacks usually, but here we need to clear visuals
     except Exception as e:
         st.error(f"Hata: {e}")
 
@@ -136,32 +152,43 @@ def register(email, password):
     except Exception as e:
         st.error(f"Kayıt Hatası: {e}")
 
-def send_otp_code(email):
+def send_otp(email):
     try:
-        # This sends a 6-digit code, not a magic link
         supabase.auth.sign_in_with_otp({"email": email})
-        st.session_state["otp_mode"] = "input_code"
-        st.session_state["otp_email_cache"] = email
-        st.rerun()
+        st.session_state["otp_sent"] = True
+        st.success("Doğrulama kodu email adresinize gönderildi!")
     except Exception as e:
         st.error(f"Hata: {e}")
 
-def verify_otp_code(email, code):
+def verify_otp(email, token):
     try:
-        # Verify Token
-        res = supabase.auth.verify_otp({"email": email, "token": code, "type": "magiclink"}) # type is magiclink even for OTP in Supabase py
+        res = supabase.auth.verify_otp({"email": email, "token": token, "type": "magiclink"})
         if res.user:
             st.session_state["user"] = res.user
-            st.session_state["otp_mode"] = "input_email" # Reset for next time
+            st.session_state["otp_sent"] = False
             st.success("Giriş Başarılı!")
             st.rerun()
     except Exception as e:
-        st.error(f"Kod Geçersiz veya Süresi Dolmuş: {e}")
+        st.error(f"Kod Hatalı veya Süresi Dolmuş: {e}")
 
 def resend_confirmation(email):
     try:
         supabase.auth.resend_otp({"type": "signup", "email": email})
         st.success(f"{email} adresine onay maili tekrar gönderildi.")
+    except Exception as e:
+        st.error(f"Hata: {e}")
+
+def reset_password(email):
+    try:
+        supabase.auth.reset_password_email(email, options={"redirect_to": "https://paticheck.streamlit.app"})
+        st.success("Şifre sıfırlama linki email adresinize gönderildi (Spam klasörünü kontrol edin).")
+    except Exception as e:
+        st.error(f"Hata: {e}")
+
+def update_password(new_password):
+    try:
+        supabase.auth.update_user({"password": new_password})
+        st.success("Şifreniz başarıyla güncellendi!")
     except Exception as e:
         st.error(f"Hata: {e}")
 
@@ -213,26 +240,22 @@ if st.session_state["user"] is None:
             else: st.warning("Lütfen email adresi girin.")
 
     with tab3:
-        st.info("Şifrenizi unuttuysanız buradan geçici kod ile giriş yapabilirsiniz.")
+        st.info("Şifrenizi unuttuysanız veya şifresiz girmek isterseniz:")
+        otp_email = st.text_input("Email", key="otp_email_input")
         
-        # OTP STATE MACHINE
-        if st.session_state["otp_mode"] == "input_email":
-            otp_email = st.text_input("Email Adresiniz", key="otp_start_email")
+        if not st.session_state["otp_sent"]:
             if st.button("Doğrulama Kodu Gönder", type="primary"):
-                if otp_email: send_otp_code(otp_email)
+                if otp_email: send_otp(otp_email)
                 else: st.warning("Email gerekli.")
-                
-        elif st.session_state["otp_mode"] == "input_code":
-            st.success(f"Kod gönderildi: {st.session_state['otp_email_cache']}")
+        else:
             otp_code = st.text_input("6 Haneli Kod", placeholder="123456")
-            
             c1, c2 = st.columns(2)
             with c1:
                 if st.button("Giriş Yap", type="primary", use_container_width=True):
-                    verify_otp_code(st.session_state['otp_email_cache'], otp_code)
+                    verify_otp(otp_email, otp_code)
             with c2:
-                if st.button("Geri Dön / Tekrar Dene", use_container_width=True):
-                    st.session_state["otp_mode"] = "input_email"
+                if st.button("Vazgeç / Tekrar Dene", use_container_width=True):
+                    st.session_state["otp_sent"] = False
                     st.rerun()
 
 else:
@@ -243,13 +266,12 @@ else:
     
     st.sidebar.title("🐾 PatiCheck")
     
-    if 'page_index' not in st.session_state: st.session_state.page_index = 0
     menu_options = ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt", "Ayarlar"]
     if st.session_state.page_index >= len(menu_options): st.session_state.page_index = 0
         
     selected_menu = st.sidebar.radio("Menü", menu_options, index=st.session_state.page_index)
     
-    # Sync
+    # Sync Sidebar
     new_index = menu_options.index(selected_menu)
     if new_index != st.session_state.page_index:
         st.session_state.page_index = new_index
@@ -264,9 +286,7 @@ else:
         
         if df.empty:
             st.info("Henüz bir kayıt oluşturmadınız.")
-            if st.button("➕ İlk Kaydınızı Oluşturun", type="primary"):
-                st.session_state.page_index = 2
-                st.rerun()
+            if st.button("➕ İlk Kaydınızı Oluşturun", type="primary", on_click=set_page_callback, args=(2,)): pass
         else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             today = date.today()
@@ -280,13 +300,9 @@ else:
             st.write("---")
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("📋 Kayıtları İncele", use_container_width=True):
-                    st.session_state.page_index = 1
-                    st.rerun()
+                if st.button("📋 Kayıtları İncele", use_container_width=True, on_click=set_page_callback, args=(1,)): pass
             with c2:
-                if st.button("➕ Yeni Aşı Ekle", type="primary", use_container_width=True):
-                    st.session_state.page_index = 2
-                    st.rerun()
+                if st.button("➕ Yeni Aşı Ekle", type="primary", use_container_width=True, on_click=set_page_callback, args=(2,)): pass
 
             st.subheader("⚠️ Durum Özeti")
             if not overdue.empty:
@@ -323,6 +339,9 @@ else:
                 future_vax = p_df[p_df["next_due_date"] >= today].sort_values("next_due_date")
 
                 with st.expander(f"{pet} | {status}"):
+                    # BUTTON: Add Record for THIS pet
+                    # Use a small grid to place button on top right or inside
+                    
                     c1, c2 = st.columns(2)
                     last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
                     c1.metric("Son Kilo", f"{last_w} kg")
@@ -340,6 +359,11 @@ else:
                         else:
                             st.markdown("✅ *Planlanan işlem yok*")
                     
+                    st.write("")
+                    # THE NEW BUTTON
+                    if st.button(f"➕ {pet} için Aşı Ekle", key=f"add_{pet}", type="primary", on_click=smart_redirect_callback, args=(pet,)):
+                        pass
+
                     st.write("---")
                     
                     # Chart
@@ -377,7 +401,7 @@ else:
                         if st.button("💾 Değişiklikleri Kaydet", key=f"save_{pet}"):
                             update_entries(edited_data)
 
-    # --- 3. NEW ENTRY (FIXED RESET) ---
+    # --- 3. NEW ENTRY ---
     elif selected_menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
         
@@ -386,28 +410,26 @@ else:
         opts = existing_pets + ["➕ Yeni Ekle..."]
         
         with c1:
-            sel = st.selectbox("Evcil Hayvan", opts)
+            # Check for Prefill Logic
+            prefill_index = 0
+            if st.session_state.prefill_pet_name and st.session_state.prefill_pet_name in opts:
+                prefill_index = opts.index(st.session_state.prefill_pet_name)
             
-            # Text Input Management
-            pet_input_val = st.session_state.input_pet
+            sel = st.selectbox("Evcil Hayvan", opts, index=prefill_index)
+            
             if sel == "➕ Yeni Ekle...":
                 pet = st.text_input("İsim", key="input_pet")
             else:
                 pet = sel
-                # We don't overwrite the key here to avoid conflict
             
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
             
-            # WEIGHT (Reset via Callback)
             w = st.number_input("Kilo (kg) - Sadece rakam", step=0.1, key="input_weight", value=None, placeholder="0.0")
-            
-            # CLEAR BUTTON (Uses Callback)
             st.button("Kilo Sıfırla", on_click=clear_weight_callback)
 
         with c2:
             d1 = st.date_input("Uygulama Tarihi")
-            
             mode = st.radio("Tarih Hesaplama", ["Otomatik (Süre Seç)", "Manuel (Tarih Seç)"], horizontal=True, label_visibility="collapsed")
             
             if mode == "Otomatik (Süre Seç)":
@@ -419,29 +441,21 @@ else:
                 d2 = st.date_input("Sonraki Tarih", min_value=d1)
                 
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
-            
             notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", key="input_notes", placeholder="Sadece yeni bilgi varsa yazın.")
 
-        # SAVE BUTTON (Uses Callback for Cleaning)
         st.button("Kaydet", type="primary", on_click=save_entry_callback, 
                   args=(st.session_state["user"].id, sel, st.session_state.input_pet, vac, d1, d2, w, notes))
 
     # --- 4. SETTINGS ---
     elif selected_menu == "Ayarlar":
         st.header("⚙️ Ayarlar")
-        st.info("Kullanıcı ID: " + str(st.session_state["user"].id))
-        st.subheader("Şifre Değiştir")
+        st.info("Kod ile giriş yaptıysanız buradan kalıcı şifrenizi belirleyebilirsiniz.")
         
         with st.form("pwd_form"):
             new_pass = st.text_input("Yeni Şifre", type="password")
             confirm_pass = st.text_input("Yeni Şifre (Tekrar)", type="password")
-            
             if st.form_submit_button("Şifreyi Güncelle"):
                 if new_pass == confirm_pass and len(new_pass) > 5:
-                    try:
-                        supabase.auth.update_user({"password": new_pass})
-                        st.success("Şifreniz başarıyla güncellendi!")
-                    except Exception as e:
-                        st.error(f"Hata: {e}")
+                    update_password(new_pass)
                 else:
-                    st.error("Şifreler eşleşmiyor veya çok kısa.")
+                    st.error("Şifreler eşleşmiyor veya çok kısa (min 6 karakter).")
