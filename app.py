@@ -20,7 +20,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: SURGICAL STYLE ---
+# --- CSS: DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -78,7 +78,11 @@ def login(email, password):
         time.sleep(0.5)
         st.rerun()
     except Exception as e:
-        st.error(f"Giriş Hatası: {e}")
+        msg = str(e)
+        if "Email not confirmed" in msg:
+            st.error("Lütfen önce email adresinize gelen onay linkine tıklayın.")
+        else:
+            st.error(f"Giriş Hatası: {msg}")
 
 def register(email, password):
     try:
@@ -92,11 +96,9 @@ def register(email, password):
 
 def resend_confirmation(email):
     try:
-        # Supabase command to resend
         supabase.auth.resend_otp({"type": "signup", "email": email})
         st.success(f"{email} adresine onay maili tekrar gönderildi.")
     except Exception as e:
-        # Rate limit warning usually happens here
         st.error(f"Hata: {e} (Lütfen bir süre bekleyip tekrar deneyin)")
 
 def logout():
@@ -119,7 +121,6 @@ if st.session_state["user"] is None:
                 login(e, p)
             
     with tab2:
-        # Registration Form
         with st.form("register_form"):
             ne = st.text_input("Email")
             np = st.text_input("Şifre", type="password")
@@ -128,7 +129,6 @@ if st.session_state["user"] is None:
                 register(ne, np)
         
         st.write("---")
-        # RESEND LOGIC (Outside form to act independently)
         st.caption("Mail gelmedi mi?")
         resend_email = st.text_input("Email Adresi", key="resend_mail", placeholder="Onay maili gelmeyen adres")
         if st.button("Onay Mailini Tekrar Gönder"):
@@ -154,7 +154,10 @@ else:
         if df.empty:
             st.container(border=True).markdown("### 👋 Hoşgeldin!\nHenüz bir kayıt bulunamadı. Sağlık takibine başlamak için sol menüden **'Yeni Kayıt'** seçeneğine tıklayın.")
         else:
+            # FIX: Convert both Date columns to datetime objects immediately
             df["next_due_date"] = pd.to_datetime(df["next_due_date"])
+            df["date_applied"] = pd.to_datetime(df["date_applied"])
+            
             df = df.sort_values("next_due_date")
             pets = df["pet_name"].unique()
 
@@ -201,9 +204,7 @@ else:
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
                         st.caption(f"{pet} için kilo değişim grafiği.")
-                        chart_df = p_df.copy()
-                        chart_df["date_applied"] = pd.to_datetime(chart_df["date_applied"])
-                        chart_df = chart_df.sort_values("date_applied")
+                        chart_df = p_df.sort_values("date_applied")
 
                         fig = go.Figure()
                         fig.add_trace(go.Scatter(
@@ -228,13 +229,12 @@ else:
                     
                     st.write("---")
                     
-                    # UPDATED TABLE FORMAT
                     st.caption("📜 Geçmiş İşlemler")
-                    # Select specific columns
+                    # Prepare Table
                     disp = p_df[["pet_name", "vaccine_type", "date_applied", "weight", "next_due_date"]].copy()
-                    # Rename
                     disp.columns = ["İsim", "Aşı Tipi", "Yapılan Tarih", "Kilo (kg)", "Sonraki Tarih"]
-                    # Format Dates
+                    
+                    # FORMAT DATES (Now safe because we converted them at the start)
                     disp["Yapılan Tarih"] = disp["Yapılan Tarih"].dt.strftime('%d.%m.%Y')
                     disp["Sonraki Tarih"] = disp["Sonraki Tarih"].dt.strftime('%d.%m.%Y')
                     
