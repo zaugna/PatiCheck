@@ -56,7 +56,6 @@ st.markdown("""
     .streamlit-expanderHeader p { color: white !important; font-size: 16px; font-weight: 600; }
     div[data-testid="stExpander"] { border: none; }
 
-    /* Updated for Data Editor */
     [data-testid="stDataFrame"] { background-color: #262730; border-radius: 8px; }
     div[data-testid="InputInstructions"] { display: none !important; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
@@ -100,6 +99,14 @@ def resend_confirmation(email):
         supabase.auth.resend_otp({"type": "signup", "email": email})
         st.success(f"{email} adresine onay maili tekrar gönderildi.")
     except Exception as e:
+        st.error(f"Hata: {e} (Lütfen bekleyip tekrar deneyin)")
+
+def reset_password(email):
+    try:
+        # Sends a password reset email
+        supabase.auth.reset_password_email(email)
+        st.success("Şifre sıfırlama linki email adresinize gönderildi.")
+    except Exception as e:
         st.error(f"Hata: {e}")
 
 def logout():
@@ -107,21 +114,15 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --- DB UPDATE FUNCTION ---
+# --- DATA LOGIC ---
 def update_entries(edited_df):
     try:
-        # Convert df back to list of dicts
-        # We only send updates for rows that changed, but Streamlit's editor 
-        # usually returns the whole dataframe. We upsert all to be safe and simple.
+        # Convert date columns back to strings for JSON
         records = edited_df.to_dict('records')
-        
-        # We need to ensure dates are strings for JSON serialization
         for r in records:
             r['date_applied'] = str(r['date_applied'])
             r['next_due_date'] = str(r['next_due_date'])
-            # Clean keys not in DB if necessary, but our columns match
             
-        # Upsert: Updates existing rows based on 'id'
         supabase.table("vaccinations").upsert(records).execute()
         st.success("✅ Değişiklikler kaydedildi!")
         time.sleep(1)
@@ -133,7 +134,7 @@ def update_entries(edited_df):
 if st.session_state["user"] is None:
     st.title("🐾 PatiCheck")
     
-    tab1, tab2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
+    tab1, tab2, tab3 = st.tabs(["Giriş Yap", "Kayıt Ol", "Şifremi Unuttum"])
     
     with tab1:
         with st.form("login_form"):
@@ -158,27 +159,77 @@ if st.session_state["user"] is None:
             if resend_email: resend_confirmation(resend_email)
             else: st.warning("Lütfen email adresi girin.")
 
+    with tab3:
+        st.write("Şifrenizi sıfırlamak için email adresinizi girin.")
+        reset_email = st.text_input("Email", key="reset_mail")
+        if st.button("Sıfırlama Linki Gönder", type="primary"):
+            if reset_email: reset_password(reset_email)
+            else: st.warning("Email adresi gerekli.")
+
 else:
+    # --- LOGGED IN ---
     with st.sidebar:
         st.write(f"👤 {st.session_state['user'].email}")
         if st.button("Çıkış Yap", use_container_width=True): logout()
     
     st.sidebar.title("🐾 PatiCheck")
-    menu = st.sidebar.radio("Menü", ["Genel Bakış", "Yeni Kayıt"])
+    # NEW: "Anasayfa" added to menu
+    menu = st.sidebar.radio("Menü", ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt"])
 
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
-    if menu == "Genel Bakış":
-        st.header("🐶🐱 Evcil Hayvan Profilleri")
+    # --- HOME PAGE (DASHBOARD) ---
+    if menu == "Anasayfa":
+        st.header("👋 Hoşgeldiniz!")
+        st.write("PatiCheck ile evcil hayvanlarınızın takibini kolayca yapın.")
         
         if df.empty:
-            st.container(border=True).markdown("### 👋 Hoşgeldin!\nHenüz bir kayıt bulunamadı. Sağlık takibine başlamak için sol menüden **'Yeni Kayıt'** seçeneğine tıklayın.")
+            st.info("Henüz bir kayıt oluşturmadınız. Başlamak için 'Yeni Kayıt' menüsünü kullanın.")
         else:
-            # FIX: Convert dates immediately
+            # Prepare Dates
+            df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
+            today = date.today()
+            
+            # KPI Cards
+            col1, col2, col3 = st.columns(3)
+            
+            # KPI 1: Pet Count
+            pet_count = df["pet_name"].nunique()
+            col1.metric("Evcil Hayvan", f"{pet_count} Adet")
+            
+            # KPI 2: Upcoming in 30 Days
+            upcoming = df[
+                (df["next_due_date"] >= today) & 
+                (df["next_due_date"] <= today + timedelta(days=30))
+            ]
+            col2.metric("Yaklaşan Aşılar", f"{len(upcoming)} Adet")
+            
+            # KPI 3: Overdue
+            overdue = df[df["next_due_date"] < today]
+            col3.metric("Gecikmiş", f"{len(overdue)} Adet", delta_color="inverse")
+            
+            st.write("---")
+            st.subheader("⚠️ Durum Özeti")
+            
+            if not overdue.empty:
+                st.error(f"Dikkat! {len(overdue)} adet gecikmiş işleminiz var.")
+                st.dataframe(overdue[["pet_name", "vaccine_type", "next_due_date"]], hide_index=True)
+            elif not upcoming.empty:
+                st.success(f"Önümüzdeki 30 gün içinde {len(upcoming)} aşı planlanıyor.")
+                st.dataframe(upcoming[["pet_name", "vaccine_type", "next_due_date"]], hide_index=True)
+            else:
+                st.success("Harika! Yakın zamanda yapılması gereken bir işlem görünmüyor.")
+
+    # --- PET PROFILES ---
+    elif menu == "Evcil Hayvanlar":
+        st.header("🐶🐱 Profil ve Geçmiş")
+        
+        if df.empty:
+            st.info("Kayıt yok.")
+        else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
-            
             df = df.sort_values("next_due_date")
             pets = df["pet_name"].unique()
 
@@ -189,9 +240,9 @@ else:
                 days_until = (closest_date - today).days
                 
                 status = "✅ Durum İyi"
-                if days_until < 0: status = f"⚠️ {abs(days_until)} Gün Geçti!"
+                if days_until < 0: status = f"⚠️ Gecikti!"
                 elif days_until < 7: status = f"🚨 {days_until} Gün Kaldı!"
-                elif days_until < 30: status = f"⚠️ Yaklaşıyor ({days_until} Gün)"
+                elif days_until < 30: status = f"⚠️ Yaklaşıyor"
 
                 future_vax = p_df[p_df["next_due_date"] >= today]
                 future_vax = future_vax.sort_values("next_due_date")
@@ -216,20 +267,10 @@ else:
                     
                     st.write("---")
                     
-                    # Vet Info
-                    notes_df = p_df.sort_values("date_applied", ascending=False)
-                    valid_notes = [n for n in notes_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
-                    if valid_notes:
-                        st.info(f"ℹ️ **Veteriner / Not:** {valid_notes[0]}")
-
-                    st.write("---")
-                    
                     # Chart
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
-                        st.caption(f"{pet} için kilo değişim grafiği.")
                         chart_df = p_df.sort_values("date_applied")
-
                         fig = go.Figure()
                         fig.add_trace(go.Scatter(
                             x=chart_df["date_applied"], y=chart_df["weight"],
@@ -253,36 +294,24 @@ else:
                     
                     st.write("---")
                     
-                    # --- EDITABLE TABLE SECTION ---
-                    st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye çift tıklayın)")
-                    
-                    # 1. Prepare data for editor
-                    # We MUST keep 'id' and 'user_id' hidden but available for the update logic
+                    # EDITABLE TABLE
+                    st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye tıklayın)")
                     edit_df = p_df.copy()
                     
-                    # 2. Configure the Editor
-                    # We hide technical columns (id, user_id, created_at)
-                    # We format Date columns to be date pickers
                     edited_data = st.data_editor(
                         edit_df,
                         column_config={
-                            "id": None, # Hidden
-                            "user_id": None, # Hidden
-                            "created_at": None, # Hidden
-                            "pet_name": st.column_config.TextColumn("İsim", disabled=True), # Lock Name
+                            "id": None, "user_id": None, "created_at": None,
+                            "pet_name": st.column_config.TextColumn("İsim", disabled=True),
                             "vaccine_type": "Aşı Tipi",
                             "date_applied": st.column_config.DateColumn("Yapılan Tarih", format="DD.MM.YYYY"),
                             "next_due_date": st.column_config.DateColumn("Sonraki Tarih", format="DD.MM.YYYY"),
-                            "weight": st.column_config.NumberColumn("Kilo (kg)", format="%.1f"),
+                            "weight": st.column_config.NumberColumn("Kilo", format="%.1f"),
                             "notes": "Notlar"
                         },
-                        hide_index=True,
-                        use_container_width=True,
-                        key=f"editor_{pet}" # Unique key per pet to avoid conflicts
+                        hide_index=True, use_container_width=True, key=f"editor_{pet}"
                     )
                     
-                    # 3. Check for changes
-                    # If the edited data is different from original p_df, show Save button
                     if not edited_data.equals(p_df):
                         if st.button("💾 Değişiklikleri Kaydet", key=f"save_{pet}"):
                             update_entries(edited_data)
@@ -290,15 +319,8 @@ else:
     elif menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
         
-        # --- CLEAR FORM LOGIC ---
-        # Initialize session state keys for inputs if not present
-        if 'default_pet' not in st.session_state: st.session_state['default_pet'] = ""
-        if 'default_weight' not in st.session_state: st.session_state['default_weight'] = 0.0
-        
-        def clear_form():
-            st.session_state['default_weight'] = 0.0
-            # We can't easily clear text/select boxes without rerunning or complex keys
-            # so we focus on the requested "Reset Weight" feature mainly
+        # Initialize Session State for Clearing
+        if 'w_input' not in st.session_state: st.session_state.w_input = 0.0
         
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
@@ -311,22 +333,19 @@ else:
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
             
-            # Weight with Key for Clearing
-            w = st.number_input("Kilo (kg)", step=0.1, key="weight_input", value=st.session_state['default_weight'])
+            # Weight Input with Key for Clearing
+            w = st.number_input("Kilo (kg)", step=0.1, key="weight_val", value=st.session_state.w_input)
             
-            # Clear Button
-            if st.button("Kilo Sıfırla", type="secondary"):
-                clear_form()
+            if st.button("Kilo Sıfırla"):
+                st.session_state.w_input = 0.0
                 st.rerun()
 
         with c2:
             d1 = st.date_input("Tarih")
             dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
-            
             if "Yıl" in dur: m = 12
             else: m = int(dur.split()[0])
             d2 = d1 + timedelta(days=m*30)
-            
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
             notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", placeholder="Sadece yeni bilgi varsa yazın.")
 
