@@ -12,10 +12,14 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - run: pip install pandas supabase
+      
+      # FIX: Added 'requests' to the installation list
+      - run: pip install pandas supabase requests
+
       - run: python notifier.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          APP_URL: ${{ secrets.APP_URL }}
