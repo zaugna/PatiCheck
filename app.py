@@ -4,9 +4,10 @@ import plotly.graph_objects as go
 from datetime import date, timedelta
 from supabase import create_client
 import time
+from streamlit_option_menu import option_menu
 
 # --- CONFIG ---
-st.set_page_config(page_title="PatiCheck", page_icon="🐾", layout="wide")
+st.set_page_config(page_title="PatiCheck", page_icon="🐾", layout="centered")
 
 # --- CONNECT TO DB ---
 @st.cache_resource
@@ -20,442 +21,371 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: DESIGN SYSTEM ---
+# --- CSS: THE "APP EXPERIENCE" (Glassmorphism & Clean Typography) ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    html, body, h1, h2, h3, h4, h5, h6, p, a, button, input, label, li, textarea, div {
-        font-family: 'Inter', sans-serif !important;
-    }
-    i, .material-icons { font-family: 'Material Icons' !important; }
-
-    .stApp { background-color: #0E1117; }
-    h1, h2, h3, h4, h5, h6, p, label, li { color: #E0E0E0 !important; }
-    [data-testid="stMetricValue"] div { color: #FFFFFF !important; }
-    [data-testid="stMetricLabel"] label { color: #FF6B6B !important; }
-    [data-testid="stSidebar"] { background-color: #1F2026 !important; }
-    
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
-        background-color: #262730 !important; color: white !important; border: 1px solid #444 !important; border-radius: 8px;
+    /* 1. Global Reset */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
     }
     
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #262730 !important; }
-    li[role="option"] { background-color: #262730 !important; color: white !important; }
-    li[role="option"]:hover { background-color: #FF6B6B !important; color: white !important; }
-    div[data-baseweb="select"] > div { background-color: #262730 !important; color: white !important; border-color: #444 !important; }
-
+    /* 2. App Background (Deep Space Dark) */
+    .stApp { background-color: #0F1116; }
+    
+    /* 3. Hide Default Elements */
+    [data-testid="stSidebar"] { display: none; }
+    #MainMenu { display: none; }
+    footer { display: none; }
+    
+    /* 4. Modern Typography */
+    h1, h2, h3 { color: #FFFFFF !important; font-weight: 800; letter-spacing: -0.5px; }
+    p, label, span { color: #A0A4AB !important; }
+    
+    /* 5. GLASS CARDS */
+    div.css-card {
+        background-color: #1E212B;
+        border: 1px solid #2E323E;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    
+    /* 6. BUTTONS */
     div.stButton > button {
-        background-color: #FF6B6B !important; color: white !important; border: none; font-weight: 600; border-radius: 8px;
+        width: 100%;
+        border-radius: 12px;
+        height: 45px;
+        background-color: #FF6B6B;
+        color: white;
+        border: none;
+        font-weight: 600;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.2);
+        transition: all 0.2s;
     }
-    div.stButton > button:hover { background-color: #FF5252 !important; }
-
-    .streamlit-expanderHeader {
-        background-color: #1F2026 !important; border: 1px solid #333; border-radius: 8px; color: white !important;
+    div.stButton > button:hover {
+        background-color: #FF5252;
+        transform: translateY(-2px);
     }
-    .streamlit-expanderHeader p { color: white !important; font-size: 16px; font-weight: 600; }
-    div[data-testid="stExpander"] { border: none; }
 
-    [data-testid="stDataFrame"] { background-color: #262730; border-radius: 8px; }
-    div[data-testid="InputInstructions"] { display: none !important; }
+    /* 7. INPUTS & DROPDOWNS (Dark & Clean) */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #15171E !important;
+        color: white !important;
+        border: 1px solid #2E323E !important;
+        border-radius: 10px;
+    }
+    /* Fix Dropdown Popup Backgrounds */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #1E212B !important;
+    }
+    li[role="option"] {
+        background-color: #1E212B !important;
+        color: white !important;
+    }
+    li[role="option"]:hover {
+        background-color: #FF6B6B !important;
+        color: white !important;
+    }
+    
+    /* 8. TABS */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        background-color: #1E212B;
+        border-radius: 8px;
+        color: white;
+        border: 1px solid #2E323E;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FF6B6B;
+        color: white;
+    }
+    
+    /* 9. METRICS */
+    [data-testid="stMetricValue"] { font-size: 24px !important; color: white !important; }
+    [data-testid="stMetricLabel"] { font-size: 13px !important; color: #888 !important; }
+    
+    /* 10. PLOTLY FIX */
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
+    
+    /* 11. HIDE PASSWORD HINTS */
+    div[data-testid="InputInstructions"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
 if not supabase:
-    st.error("Lütfen Streamlit Secrets ayarlarını yapınız.")
+    st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
 
-# --- STATE INITIALIZATION ---
+# --- STATE MANAGEMENT ---
 if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
-# Input Keys for Form Clearing
-if "input_weight" not in st.session_state: st.session_state.input_weight = None
-if "input_pet" not in st.session_state: st.session_state.input_pet = ""
-if "input_notes" not in st.session_state: st.session_state.input_notes = ""
+# --- MODERN DIALOGS ---
+@st.dialog("💉 Yeni Aşı Kaydı")
+def add_vaccine_dialog(existing_pets, default_pet=None):
+    # Determine Pet Selection
+    index = 0
+    if default_pet and default_pet in existing_pets:
+        index = existing_pets.index(default_pet) + 1 # +1 because of "New..." option
+    
+    options = ["➕ Yeni Pet Ekle..."] + existing_pets
+    sel = st.selectbox("Evcil Hayvan", options, index=index)
+    
+    final_pet_name = ""
+    if sel == "➕ Yeni Pet Ekle...":
+        final_pet_name = st.text_input("Pet İsmi", placeholder="Örn: Pamuk")
+    else:
+        final_pet_name = sel
 
-# Navigation & Prefill State
-if 'page_index' not in st.session_state: st.session_state.page_index = 0
-if 'prefill_pet_name' not in st.session_state: st.session_state.prefill_pet_name = None
+    c1, c2 = st.columns(2)
+    with c1:
+        vac = st.selectbox("Aşı / İşlem", ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
+    with c2:
+        w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
 
-# --- CALLBACKS ---
-def clear_form_callback():
-    st.session_state.input_weight = None
-    st.session_state.input_pet = ""
-    st.session_state.input_notes = ""
-    # Clear prefill so it doesn't stick forever
-    st.session_state.prefill_pet_name = None
+    d1 = st.date_input("Yapılan Tarih")
+    dur = st.pills("Geçerlilik Süresi", ["1 Ay", "2 Ay", "3 Ay", "1 Yıl"], default="1 Yıl")
+    
+    m = 12 if "Yıl" in dur else int(dur.split()[0])
+    d2 = d1 + timedelta(days=m*30)
+    st.caption(f"📅 Bir Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
+    
+    notes = st.text_area("Notlar", height=80, placeholder="Veteriner adı, aşı markası vb...")
 
-def set_page_callback(index):
-    st.session_state.page_index = index
+    if st.button("Kaydet", type="primary"):
+        if not final_pet_name:
+            st.warning("Lütfen bir isim girin.")
+        else:
+            try:
+                data = {
+                    "user_id": st.session_state["user"].id,
+                    "pet_name": final_pet_name,
+                    "vaccine_type": vac,
+                    "date_applied": str(d1),
+                    "next_due_date": str(d2),
+                    "weight": w if w else 0.0,
+                    "notes": notes
+                }
+                supabase.table("vaccinations").insert(data).execute()
+                st.success("Kaydedildi!")
+                time.sleep(0.5)
+                st.rerun()
+            except Exception as e:
+                st.error(f"Hata: {e}")
 
-def smart_redirect_callback(pet_name):
-    # 1. Switch to 'Yeni Kayıt' tab (Index 2)
-    st.session_state.page_index = 2
-    # 2. Set the pet name to pre-select
-    st.session_state.prefill_pet_name = pet_name
-
-def save_entry_callback(user_id, pet_sel, pet_text, vac, d1, d2, w, notes):
-    try:
-        final_pet = pet_text if pet_sel == "➕ Yeni Ekle..." else pet_sel
-        if not final_pet:
-            st.error("Lütfen bir isim girin.")
-            return
-
-        final_w = w if w is not None else 0.0
-        
-        data = {
-            "user_id": user_id,
-            "pet_name": final_pet, 
-            "vaccine_type": vac,
-            "date_applied": str(d1), 
-            "next_due_date": str(d2), 
-            "weight": final_w,
-            "notes": notes
-        }
-        supabase.table("vaccinations").insert(data).execute()
-        st.success("✅ Kayıt Başarıyla Eklendi!")
-        
-        clear_form_callback()
-        time.sleep(0.5)
-        # We don't use st.rerun in callbacks usually, but here we need to clear visuals
-    except Exception as e:
-        st.error(f"Hata: {e}")
-
-def clear_weight_callback():
-    st.session_state.input_weight = None
-
-# --- AUTH FUNCTIONS ---
+# --- AUTH LOGIC ---
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         st.session_state["user"] = res.user
-        st.success("Giriş Başarılı!")
-        time.sleep(0.5)
         st.rerun()
     except Exception as e:
         msg = str(e)
-        if "Email not confirmed" in msg:
-            st.error("Lütfen önce email adresinize gelen onay linkine tıklayın.")
-        else:
-            st.error(f"Giriş Hatası: {msg}")
-
-def register(email, password):
-    try:
-        res = supabase.auth.sign_up({"email": email, "password": password})
-        if res.user:
-            st.success("Kayıt oluşturuldu!")
-            st.warning("⚠️ Lütfen SPAM/Gereksiz klasörünüzü kontrol edin.")
-            st.info("Email adresinize gelen linke tıklayarak hesabınızı onaylayın.")
-    except Exception as e:
-        st.error(f"Kayıt Hatası: {e}")
-
-def send_otp(email):
-    try:
-        supabase.auth.sign_in_with_otp({"email": email})
-        st.session_state["otp_sent"] = True
-        st.success("Doğrulama kodu email adresinize gönderildi!")
-    except Exception as e:
-        st.error(f"Hata: {e}")
-
-def verify_otp(email, token):
-    try:
-        res = supabase.auth.verify_otp({"email": email, "token": token, "type": "magiclink"})
-        if res.user:
-            st.session_state["user"] = res.user
-            st.session_state["otp_sent"] = False
-            st.success("Giriş Başarılı!")
-            st.rerun()
-    except Exception as e:
-        st.error(f"Kod Hatalı veya Süresi Dolmuş: {e}")
-
-def resend_confirmation(email):
-    try:
-        supabase.auth.resend_otp({"type": "signup", "email": email})
-        st.success(f"{email} adresine onay maili tekrar gönderildi.")
-    except Exception as e:
-        st.error(f"Hata: {e}")
-
-def reset_password(email):
-    try:
-        supabase.auth.reset_password_email(email, options={"redirect_to": "https://paticheck.streamlit.app"})
-        st.success("Şifre sıfırlama linki email adresinize gönderildi (Spam klasörünü kontrol edin).")
-    except Exception as e:
-        st.error(f"Hata: {e}")
-
-def update_password(new_password):
-    try:
-        supabase.auth.update_user({"password": new_password})
-        st.success("Şifreniz başarıyla güncellendi!")
-    except Exception as e:
-        st.error(f"Hata: {e}")
+        if "Email not confirmed" in msg: st.error("Lütfen email onaylayın.")
+        else: st.error("Giriş Hatalı.")
 
 def logout():
     supabase.auth.sign_out()
     st.session_state["user"] = None
     st.rerun()
 
-# --- DATA LOGIC ---
-def update_entries(edited_df):
-    try:
-        records = edited_df.to_dict('records')
-        for r in records:
-            r['date_applied'] = str(r['date_applied'])
-            r['next_due_date'] = str(r['next_due_date'])
-        supabase.table("vaccinations").upsert(records).execute()
-        st.success("✅ Değişiklikler kaydedildi!")
-        time.sleep(1)
-        st.rerun()
-    except Exception as e:
-        st.error(f"Güncelleme Hatası: {e}")
-
-# --- APP FLOW ---
+# --- ENTRY POINT ---
 if st.session_state["user"] is None:
-    st.title("🐾 PatiCheck")
+    st.markdown("<h1 style='text-align: center; color: #FF6B6B !important;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Evcil hayvanlarınızın sağlığı, kontrol altında.</p>", unsafe_allow_html=True)
+    st.write("")
     
-    tab1, tab2, tab3 = st.tabs(["Giriş Yap", "Kayıt Ol", "Kod ile Giriş (Şifresiz)"])
+    tab1, tab2 = st.tabs(["Giriş Yap", "Kod ile Gir"])
     
     with tab1:
-        with st.form("login_form"):
-            e = st.text_input("Email")
-            p = st.text_input("Şifre", type="password")
-            st.write("") 
-            if st.form_submit_button("Giriş Yap", type="primary", use_container_width=True): 
-                login(e, p)
-            
-    with tab2:
-        with st.form("register_form"):
-            ne = st.text_input("Email")
-            np = st.text_input("Şifre", type="password")
-            st.write("")
-            if st.form_submit_button("Kayıt Ol", type="primary", use_container_width=True): 
-                register(ne, np)
-        st.write("---")
-        st.caption("Mail gelmedi mi?")
-        resend_email = st.text_input("Email Adresi", key="resend_mail", placeholder="Onay maili gelmeyen adres")
-        if st.button("Onay Mailini Tekrar Gönder"):
-            if resend_email: resend_confirmation(resend_email)
-            else: st.warning("Lütfen email adresi girin.")
+        email = st.text_input("Email", key="l_e")
+        password = st.text_input("Şifre", type="password", key="l_p")
+        if st.button("Giriş Yap"): login(email, password)
+        st.markdown("<br><p style='text-align:center; font-size:12px'>Hesabınız yoksa kod ile giriş yapın, otomatik oluşsun.</p>", unsafe_allow_html=True)
 
-    with tab3:
-        st.info("Şifrenizi unuttuysanız veya şifresiz girmek isterseniz:")
-        otp_email = st.text_input("Email", key="otp_email_input")
-        
+    with tab2:
+        st.caption("Şifresiz hızlı giriş (veya kayıt)")
+        otp_e = st.text_input("Email", key="otp_e")
         if not st.session_state["otp_sent"]:
-            if st.button("Doğrulama Kodu Gönder", type="primary"):
-                if otp_email: send_otp(otp_email)
-                else: st.warning("Email gerekli.")
+            if st.button("Kod Gönder"):
+                try:
+                    supabase.auth.sign_in_with_otp({"email": otp_e})
+                    st.session_state["otp_sent"] = True
+                    st.session_state["otp_email_cache"] = otp_e
+                    st.rerun()
+                except Exception as e: st.error(str(e))
         else:
-            otp_code = st.text_input("6 Haneli Kod", placeholder="123456")
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("Giriş Yap", type="primary", use_container_width=True):
-                    verify_otp(otp_email, otp_code)
-            with c2:
-                if st.button("Vazgeç / Tekrar Dene", use_container_width=True):
+            st.success("Kod gönderildi!")
+            code = st.text_input("Gelen Kodu Girin")
+            if st.button("Doğrula"):
+                try:
+                    res = supabase.auth.verify_otp({"email": st.session_state["otp_email_cache"], "token": code, "type": "magiclink"})
+                    st.session_state["user"] = res.user
                     st.session_state["otp_sent"] = False
                     st.rerun()
+                except: st.error("Hatalı Kod")
 
 else:
-    # --- LOGGED IN ---
-    with st.sidebar:
-        st.write(f"👤 {st.session_state['user'].email}")
-        if st.button("Çıkış Yap", use_container_width=True): logout()
-    
-    st.sidebar.title("🐾 PatiCheck")
-    
-    menu_options = ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt", "Ayarlar"]
-    if st.session_state.page_index >= len(menu_options): st.session_state.page_index = 0
-        
-    selected_menu = st.sidebar.radio("Menü", menu_options, index=st.session_state.page_index)
-    
-    # Sync Sidebar
-    new_index = menu_options.index(selected_menu)
-    if new_index != st.session_state.page_index:
-        st.session_state.page_index = new_index
-        st.rerun()
+    # --- APP NAVIGATION ---
+    selected = option_menu(
+        menu_title=None,
+        options=["Ana Sayfa", "Profiller", "Ayarlar"],
+        icons=["house-fill", "grid-fill", "gear-fill"],
+        default_index=0,
+        orientation="horizontal",
+        styles={
+            "container": {"padding": "0!important", "background-color": "#1E212B", "border-radius": "12px"},
+            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#A0A4AB"},
+            "nav-link-selected": {"background-color": "#FF6B6B", "color": "white", "font-weight": "600"},
+        }
+    )
 
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
-    # --- 1. HOME ---
-    if selected_menu == "Anasayfa":
-        st.header("👋 Hoşgeldiniz!")
-        
+    # --- VIEW 1: HOME ---
+    if selected == "Ana Sayfa":
+        c1, c2 = st.columns([3, 1])
+        c1.subheader(f"👋 Merhaba")
+        if c2.button("➕ Ekle", type="primary"):
+            existing = list(df["pet_name"].unique()) if not df.empty else []
+            add_vaccine_dialog(existing)
+
         if df.empty:
-            st.info("Henüz bir kayıt oluşturmadınız.")
-            if st.button("➕ İlk Kaydınızı Oluşturun", type="primary", on_click=set_page_callback, args=(2,)): pass
+            st.info("Hoşgeldiniz! Henüz bir kayıt yok. 'Ekle' butonuna basarak başlayın.")
         else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             today = date.today()
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Evcil Hayvan", f"{df['pet_name'].nunique()} Adet")
-            upcoming = df[(df["next_due_date"] >= today) & (df["next_due_date"] <= today + timedelta(days=30))]
-            col2.metric("Yaklaşan Aşılar", f"{len(upcoming)} Adet")
+            
+            k1, k2, k3 = st.columns(3)
+            k1.metric("Toplam Pet", df['pet_name'].nunique())
+            upcoming = df[df["next_due_date"] > today]
+            k2.metric("Yaklaşan", len(upcoming))
             overdue = df[df["next_due_date"] < today]
-            col3.metric("Gecikmiş", f"{len(overdue)} Adet", delta_color="inverse")
+            k3.metric("Gecikmiş", len(overdue), delta_color="inverse")
             
             st.write("---")
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("📋 Kayıtları İncele", use_container_width=True, on_click=set_page_callback, args=(1,)): pass
-            with c2:
-                if st.button("➕ Yeni Aşı Ekle", type="primary", use_container_width=True, on_click=set_page_callback, args=(2,)): pass
-
-            st.subheader("⚠️ Durum Özeti")
-            if not overdue.empty:
-                st.error(f"Dikkat! {len(overdue)} adet gecikmiş işleminiz var.")
-                st.dataframe(overdue[["pet_name", "vaccine_type", "next_due_date"]], hide_index=True)
-            elif not upcoming.empty:
-                st.success(f"Önümüzdeki 30 gün içinde {len(upcoming)} aşı planlanıyor.")
-                st.dataframe(upcoming[["pet_name", "vaccine_type", "next_due_date"]], hide_index=True)
+            
+            urgent = df[df["next_due_date"] <= (today + timedelta(days=7))].sort_values("next_due_date")
+            
+            if not urgent.empty:
+                st.caption("🚨 ACİL DURUMLAR & YAKLAŞANLAR")
+                for _, row in urgent.iterrows():
+                    days = (row['next_due_date'] - today).days
+                    bg_color = "rgba(255, 75, 75, 0.1)"
+                    border_color = "#FF4B4B"
+                    msg = f"{abs(days)} GÜN GEÇTİ" if days < 0 else f"{days} GÜN KALDI"
+                    
+                    st.markdown(f"""
+                    <div style="background-color: {bg_color}; border-left: 4px solid {border_color}; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: white; font-weight: bold; font-size: 16px;">{row['pet_name']}</div>
+                            <div style="color: #ccc; font-size: 14px;">{row['vaccine_type']}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: {border_color}; font-weight: 800; font-size: 14px;">{msg}</div>
+                            <div style="color: #888; font-size: 12px;">{row['next_due_date'].strftime('%d.%m.%Y')}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
-                st.success("Harika! Yakın zamanda yapılması gereken bir işlem görünmüyor.")
+                st.success("Harika! Önümüzdeki 7 gün içinde acil bir durum yok.")
 
-    # --- 2. PET PROFILES ---
-    elif selected_menu == "Evcil Hayvanlar":
-        st.header("🐶🐱 Profil ve Geçmiş")
-        
+    # --- VIEW 2: PROFILES ---
+    elif selected == "Profiller":
         if df.empty:
-            st.info("Kayıt yok.")
+            st.warning("Profil bulunamadı.")
         else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
-            df = df.sort_values("next_due_date")
             pets = df["pet_name"].unique()
 
             for pet in pets:
-                p_df = df[df["pet_name"] == pet]
-                today = date.today()
-                closest = p_df["next_due_date"].min()
-                days = (closest - today).days
-                status = "✅ İyi"
-                if days < 0: status = f"⚠️ Gecikti!"
-                elif days < 7: status = f"🚨 {days} Gün Kaldı!"
-                elif days < 30: status = f"⚠️ Yaklaşıyor"
-
-                future_vax = p_df[p_df["next_due_date"] >= today].sort_values("next_due_date")
-
-                with st.expander(f"{pet} | {status}"):
-                    # BUTTON: Add Record for THIS pet
-                    # Use a small grid to place button on top right or inside
-                    
-                    c1, c2 = st.columns(2)
-                    last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
-                    c1.metric("Son Kilo", f"{last_w} kg")
-                    
-                    with c2:
-                        st.caption("Sıradaki İşlemler")
-                        if not future_vax.empty:
-                            for _, row in future_vax.head(3).iterrows():
-                                v_name = row['vaccine_type']
-                                v_date = row['next_due_date'].strftime('%d.%m.%Y')
-                                st.markdown(f"""<div style="margin-bottom: 8px; font-size: 15px; display: flex; align-items: center;">
-                                        <span style="color: #FFFFFF; font-weight: 600; margin-right: 10px;">{v_name}</span>
-                                        <span style="color: #FF6B6B; font-weight: bold;">{v_date}</span>
-                                    </div>""", unsafe_allow_html=True)
-                        else:
-                            st.markdown("✅ *Planlanan işlem yok*")
-                    
-                    st.write("")
-                    # THE NEW BUTTON
-                    if st.button(f"➕ {pet} için Aşı Ekle", key=f"add_{pet}", type="primary", on_click=smart_redirect_callback, args=(pet,)):
-                        pass
-
-                    st.write("---")
-                    
-                    # Chart
-                    if len(p_df) > 0:
-                        st.subheader("📉 Kilo Geçmişi")
-                        chart_df = p_df.sort_values("date_applied")
-                        fig = go.Figure()
-                        fig.add_trace(go.Scatter(x=chart_df["date_applied"], y=chart_df["weight"],
-                            mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'),
-                            marker=dict(size=8, color='#0E1117', line=dict(color='#FF6B6B', width=2)),
-                            fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)', name='Kilo'))
-                        if len(chart_df) == 1:
-                            val = chart_df["weight"].iloc[0]
-                            fig.add_hline(y=val, line_dash="dot", line_color="#444", annotation_text="Başlangıç", annotation_position="top right")
-                        fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), 
-                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#262730'))
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                    
-                    st.write("---")
-                    st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye tıklayın)")
-                    
-                    edit_df = p_df.copy()
-                    edited_data = st.data_editor(edit_df, column_config={
-                        "id": None, "user_id": None, "created_at": None,
-                        "pet_name": st.column_config.TextColumn("İsim", disabled=True),
-                        "vaccine_type": "Aşı Tipi",
-                        "date_applied": st.column_config.DateColumn("Yapılan Tarih", format="DD.MM.YYYY"),
-                        "next_due_date": st.column_config.DateColumn("Sonraki Tarih", format="DD.MM.YYYY"),
-                        "weight": st.column_config.NumberColumn("Kilo", format="%.1f"),
-                        "notes": "Notlar"
-                    }, hide_index=True, use_container_width=True, key=f"editor_{pet}")
-                    
-                    if not edited_data.equals(p_df):
-                        if st.button("💾 Değişiklikleri Kaydet", key=f"save_{pet}"):
-                            update_entries(edited_data)
-
-    # --- 3. NEW ENTRY ---
-    elif selected_menu == "Yeni Kayıt":
-        st.header("💉 Yeni Giriş")
-        
-        c1, c2 = st.columns(2)
-        existing_pets = list(df["pet_name"].unique()) if not df.empty else []
-        opts = existing_pets + ["➕ Yeni Ekle..."]
-        
-        with c1:
-            # Check for Prefill Logic
-            prefill_index = 0
-            if st.session_state.prefill_pet_name and st.session_state.prefill_pet_name in opts:
-                prefill_index = opts.index(st.session_state.prefill_pet_name)
-            
-            sel = st.selectbox("Evcil Hayvan", opts, index=prefill_index)
-            
-            if sel == "➕ Yeni Ekle...":
-                pet = st.text_input("İsim", key="input_pet")
-            else:
-                pet = sel
-            
-            vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
-            vac = st.selectbox("İşlem", vaccine_list)
-            
-            w = st.number_input("Kilo (kg) - Sadece rakam", step=0.1, key="input_weight", value=None, placeholder="0.0")
-            st.button("Kilo Sıfırla", on_click=clear_weight_callback)
-
-        with c2:
-            d1 = st.date_input("Uygulama Tarihi")
-            mode = st.radio("Tarih Hesaplama", ["Otomatik (Süre Seç)", "Manuel (Tarih Seç)"], horizontal=True, label_visibility="collapsed")
-            
-            if mode == "Otomatik (Süre Seç)":
-                dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
-                if "Yıl" in dur: m = 12
-                else: m = int(dur.split()[0])
-                d2 = d1 + timedelta(days=m*30)
-            else:
-                d2 = st.date_input("Sonraki Tarih", min_value=d1)
+                p_df = df[df["pet_name"] == pet].sort_values("date_applied")
                 
-            st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
-            notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", key="input_notes", placeholder="Sadece yeni bilgi varsa yazın.")
+                with st.container():
+                    c_head1, c_head2 = st.columns([3, 1])
+                    c_head1.subheader(f"🐾 {pet}")
+                    if c_head2.button("İşlem Ekle", key=f"btn_{pet}"):
+                        add_vaccine_dialog(list(pets), default_pet=pet)
+                    
+                    t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
+                    
+                    with t1:
+                        future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
+                        col_a, col_b = st.columns(2)
+                        last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
+                        col_a.metric("Kilo", f"{last_w} kg")
+                        
+                        if not future.empty:
+                            nxt = future.iloc[0]
+                            col_b.metric("Sıradaki", nxt['vaccine_type'], nxt['next_due_date'].strftime('%d.%m'))
+                        else:
+                            col_b.metric("Sıradaki", "-")
+                            
+                        valid_notes = [n for n in p_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
+                        if valid_notes:
+                            st.info(f"📝 {valid_notes[-1]}")
 
-        st.button("Kaydet", type="primary", on_click=save_entry_callback, 
-                  args=(st.session_state["user"].id, sel, st.session_state.input_pet, vac, d1, d2, w, notes))
+                    with t2:
+                        edit_df = p_df.copy()
+                        edited = st.data_editor(
+                            edit_df,
+                            column_config={
+                                "id": None, "user_id": None, "created_at": None, "pet_name": None,
+                                "vaccine_type": "Aşı",
+                                "date_applied": st.column_config.DateColumn("Yapıldı"),
+                                "next_due_date": st.column_config.DateColumn("Bitiş"),
+                                "weight": st.column_config.NumberColumn("Kg", format="%.1f"),
+                                "notes": "Not"
+                            },
+                            hide_index=True,
+                            use_container_width=True,
+                            key=f"editor_{pet}"
+                        )
+                        if not edited.equals(p_df):
+                            if st.button("Değişiklikleri Kaydet", key=f"save_{pet}"):
+                                try:
+                                    recs = edited.to_dict('records')
+                                    for r in recs:
+                                        r['date_applied'] = str(r['date_applied'])
+                                        r['next_due_date'] = str(r['next_due_date'])
+                                    supabase.table("vaccinations").upsert(recs).execute()
+                                    st.success("Güncellendi!")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                except: st.error("Hata")
 
-    # --- 4. SETTINGS ---
-    elif selected_menu == "Ayarlar":
-        st.header("⚙️ Ayarlar")
-        st.info("Kod ile giriş yaptıysanız buradan kalıcı şifrenizi belirleyebilirsiniz.")
+                    with t3:
+                        if len(p_df) > 0:
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=p_df["date_applied"], y=p_df["weight"],
+                                mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'),
+                                fill='tozeroy'
+                            ))
+                            fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), 
+                                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#333'))
+                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                st.write("---")
+
+    # --- VIEW 3: SETTINGS ---
+    elif selected == "Ayarlar":
+        st.title("Ayarlar")
+        st.caption(f"Giriş: {st.session_state['user'].email}")
         
-        with st.form("pwd_form"):
-            new_pass = st.text_input("Yeni Şifre", type="password")
-            confirm_pass = st.text_input("Yeni Şifre (Tekrar)", type="password")
-            if st.form_submit_button("Şifreyi Güncelle"):
-                if new_pass == confirm_pass and len(new_pass) > 5:
-                    update_password(new_pass)
-                else:
-                    st.error("Şifreler eşleşmiyor veya çok kısa (min 6 karakter).")
+        if st.button("Çıkış Yap", type="secondary"): logout()
+        
+        st.write("---")
+        with st.expander("Şifre Değiştir"):
+            new_p = st.text_input("Yeni Şifre", type="password")
+            if st.button("Güncelle"):
+                try:
+                    supabase.auth.update_user({"password": new_p})
+                    st.success("Başarılı!")
+                except Exception as e: st.error(f"Hata: {e}")
