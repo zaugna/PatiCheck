@@ -56,6 +56,7 @@ st.markdown("""
     .streamlit-expanderHeader p { color: white !important; font-size: 16px; font-weight: 600; }
     div[data-testid="stExpander"] { border: none; }
 
+    /* Updated for Data Editor */
     [data-testid="stDataFrame"] { background-color: #262730; border-radius: 8px; }
     div[data-testid="InputInstructions"] { display: none !important; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
@@ -99,12 +100,34 @@ def resend_confirmation(email):
         supabase.auth.resend_otp({"type": "signup", "email": email})
         st.success(f"{email} adresine onay maili tekrar gönderildi.")
     except Exception as e:
-        st.error(f"Hata: {e} (Lütfen bir süre bekleyip tekrar deneyin)")
+        st.error(f"Hata: {e}")
 
 def logout():
     supabase.auth.sign_out()
     st.session_state["user"] = None
     st.rerun()
+
+# --- DB UPDATE FUNCTION ---
+def update_entries(edited_df):
+    try:
+        # Convert df back to list of dicts
+        # We only send updates for rows that changed, but Streamlit's editor 
+        # usually returns the whole dataframe. We upsert all to be safe and simple.
+        records = edited_df.to_dict('records')
+        
+        # We need to ensure dates are strings for JSON serialization
+        for r in records:
+            r['date_applied'] = str(r['date_applied'])
+            r['next_due_date'] = str(r['next_due_date'])
+            # Clean keys not in DB if necessary, but our columns match
+            
+        # Upsert: Updates existing rows based on 'id'
+        supabase.table("vaccinations").upsert(records).execute()
+        st.success("✅ Değişiklikler kaydedildi!")
+        time.sleep(1)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Güncelleme Hatası: {e}")
 
 # --- APP FLOW ---
 if st.session_state["user"] is None:
@@ -132,10 +155,8 @@ if st.session_state["user"] is None:
         st.caption("Mail gelmedi mi?")
         resend_email = st.text_input("Email Adresi", key="resend_mail", placeholder="Onay maili gelmeyen adres")
         if st.button("Onay Mailini Tekrar Gönder"):
-            if resend_email:
-                resend_confirmation(resend_email)
-            else:
-                st.warning("Lütfen email adresi girin.")
+            if resend_email: resend_confirmation(resend_email)
+            else: st.warning("Lütfen email adresi girin.")
 
 else:
     with st.sidebar:
@@ -154,9 +175,9 @@ else:
         if df.empty:
             st.container(border=True).markdown("### 👋 Hoşgeldin!\nHenüz bir kayıt bulunamadı. Sağlık takibine başlamak için sol menüden **'Yeni Kayıt'** seçeneğine tıklayın.")
         else:
-            # FIX: Convert both Date columns to datetime objects immediately
-            df["next_due_date"] = pd.to_datetime(df["next_due_date"])
-            df["date_applied"] = pd.to_datetime(df["date_applied"])
+            # FIX: Convert dates immediately
+            df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
+            df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
             
             df = df.sort_values("next_due_date")
             pets = df["pet_name"].unique()
@@ -165,13 +186,14 @@ else:
                 p_df = df[df["pet_name"] == pet]
                 today = date.today()
                 closest_date = p_df["next_due_date"].min()
-                days_until = (closest_date.date() - today).days
+                days_until = (closest_date - today).days
                 
                 status = "✅ Durum İyi"
-                if days_until < 7: status = f"🚨 {days_until} Gün Kaldı!"
+                if days_until < 0: status = f"⚠️ {abs(days_until)} Gün Geçti!"
+                elif days_until < 7: status = f"🚨 {days_until} Gün Kaldı!"
                 elif days_until < 30: status = f"⚠️ Yaklaşıyor ({days_until} Gün)"
 
-                future_vax = p_df[p_df["next_due_date"] >= pd.Timestamp(today)]
+                future_vax = p_df[p_df["next_due_date"] >= today]
                 future_vax = future_vax.sort_values("next_due_date")
 
                 with st.expander(f"{pet} | {status}"):
@@ -194,6 +216,7 @@ else:
                     
                     st.write("---")
                     
+                    # Vet Info
                     notes_df = p_df.sort_values("date_applied", ascending=False)
                     valid_notes = [n for n in notes_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
                     if valid_notes:
@@ -201,6 +224,7 @@ else:
 
                     st.write("---")
                     
+                    # Chart
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
                         st.caption(f"{pet} için kilo değişim grafiği.")
@@ -229,19 +253,53 @@ else:
                     
                     st.write("---")
                     
-                    st.caption("📜 Geçmiş İşlemler")
-                    # Prepare Table
-                    disp = p_df[["pet_name", "vaccine_type", "date_applied", "weight", "next_due_date"]].copy()
-                    disp.columns = ["İsim", "Aşı Tipi", "Yapılan Tarih", "Kilo (kg)", "Sonraki Tarih"]
+                    # --- EDITABLE TABLE SECTION ---
+                    st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye çift tıklayın)")
                     
-                    # FORMAT DATES (Now safe because we converted them at the start)
-                    disp["Yapılan Tarih"] = disp["Yapılan Tarih"].dt.strftime('%d.%m.%Y')
-                    disp["Sonraki Tarih"] = disp["Sonraki Tarih"].dt.strftime('%d.%m.%Y')
+                    # 1. Prepare data for editor
+                    # We MUST keep 'id' and 'user_id' hidden but available for the update logic
+                    edit_df = p_df.copy()
                     
-                    st.dataframe(disp, hide_index=True, use_container_width=True)
+                    # 2. Configure the Editor
+                    # We hide technical columns (id, user_id, created_at)
+                    # We format Date columns to be date pickers
+                    edited_data = st.data_editor(
+                        edit_df,
+                        column_config={
+                            "id": None, # Hidden
+                            "user_id": None, # Hidden
+                            "created_at": None, # Hidden
+                            "pet_name": st.column_config.TextColumn("İsim", disabled=True), # Lock Name
+                            "vaccine_type": "Aşı Tipi",
+                            "date_applied": st.column_config.DateColumn("Yapılan Tarih", format="DD.MM.YYYY"),
+                            "next_due_date": st.column_config.DateColumn("Sonraki Tarih", format="DD.MM.YYYY"),
+                            "weight": st.column_config.NumberColumn("Kilo (kg)", format="%.1f"),
+                            "notes": "Notlar"
+                        },
+                        hide_index=True,
+                        use_container_width=True,
+                        key=f"editor_{pet}" # Unique key per pet to avoid conflicts
+                    )
+                    
+                    # 3. Check for changes
+                    # If the edited data is different from original p_df, show Save button
+                    if not edited_data.equals(p_df):
+                        if st.button("💾 Değişiklikleri Kaydet", key=f"save_{pet}"):
+                            update_entries(edited_data)
 
     elif menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
+        
+        # --- CLEAR FORM LOGIC ---
+        # Initialize session state keys for inputs if not present
+        if 'default_pet' not in st.session_state: st.session_state['default_pet'] = ""
+        if 'default_weight' not in st.session_state: st.session_state['default_weight'] = 0.0
+        
+        def clear_form():
+            st.session_state['default_weight'] = 0.0
+            # We can't easily clear text/select boxes without rerunning or complex keys
+            # so we focus on the requested "Reset Weight" feature mainly
+        
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
         opts = existing_pets + ["➕ Yeni Ekle..."]
@@ -249,16 +307,26 @@ else:
         with c1:
             sel = st.selectbox("Evcil Hayvan", opts)
             pet = st.text_input("İsim") if sel == "➕ Yeni Ekle..." else sel
+            
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
-            w = st.number_input("Kilo (kg)", step=0.1)
+            
+            # Weight with Key for Clearing
+            w = st.number_input("Kilo (kg)", step=0.1, key="weight_input", value=st.session_state['default_weight'])
+            
+            # Clear Button
+            if st.button("Kilo Sıfırla", type="secondary"):
+                clear_form()
+                st.rerun()
 
         with c2:
             d1 = st.date_input("Tarih")
             dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
+            
             if "Yıl" in dur: m = 12
             else: m = int(dur.split()[0])
             d2 = d1 + timedelta(days=m*30)
+            
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
             notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", placeholder="Sadece yeni bilgi varsa yazın.")
 
