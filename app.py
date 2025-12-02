@@ -31,15 +31,15 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* 2. App Background (Deep Space Dark) */
+    /* 2. App Background */
     .stApp { background-color: #0F1116; }
     
-    /* 3. Hide Default Elements */
+    /* 3. Hide Sidebar & Footer */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
     
-    /* 4. Modern Typography */
+    /* 4. Typography */
     h1, h2, h3 { color: #FFFFFF !important; font-weight: 800; letter-spacing: -0.5px; }
     p, label, span { color: #A0A4AB !important; }
     
@@ -68,26 +68,22 @@ st.markdown("""
         background-color: #FF5252;
         transform: translateY(-2px);
     }
+    button[kind="secondary"] {
+        background-color: #2E323E !important;
+        border: 1px solid #444 !important;
+    }
 
-    /* 7. INPUTS & DROPDOWNS (Dark & Clean) */
+    /* 7. INPUTS */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #15171E !important;
         color: white !important;
         border: 1px solid #2E323E !important;
         border-radius: 10px;
     }
-    /* Fix Dropdown Popup Backgrounds */
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
-        background-color: #1E212B !important;
-    }
-    li[role="option"] {
-        background-color: #1E212B !important;
-        color: white !important;
-    }
-    li[role="option"]:hover {
-        background-color: #FF6B6B !important;
-        color: white !important;
-    }
+    /* Dropdown Popups */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #1E212B !important; }
+    li[role="option"] { background-color: #1E212B !important; color: white !important; }
+    li[role="option"]:hover { background-color: #FF6B6B !important; color: white !important; }
     
     /* 8. TABS */
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
@@ -110,7 +106,7 @@ st.markdown("""
     /* 10. PLOTLY FIX */
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     
-    /* 11. HIDE PASSWORD HINTS */
+    /* 11. HIDE HINTS */
     div[data-testid="InputInstructions"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -124,7 +120,7 @@ if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
-# --- MODERN DIALOGS ---
+# --- MODERN DIALOGS (The "App" Feel) ---
 @st.dialog("💉 Yeni Aşı Kaydı")
 def add_vaccine_dialog(existing_pets, default_pet=None):
     # Determine Pet Selection
@@ -148,10 +144,17 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
 
     d1 = st.date_input("Yapılan Tarih")
-    dur = st.pills("Geçerlilik Süresi", ["1 Ay", "2 Ay", "3 Ay", "1 Yıl"], default="1 Yıl")
     
-    m = 12 if "Yıl" in dur else int(dur.split()[0])
-    d2 = d1 + timedelta(days=m*30)
+    # RESTORED FEATURE: Manual Date Logic
+    mode = st.radio("Hesaplama", ["Otomatik (Süre)", "Manuel Tarih"], horizontal=True, label_visibility="collapsed")
+    
+    if mode == "Otomatik (Süre)":
+        dur = st.pills("Geçerlilik", ["1 Ay", "2 Ay", "3 Ay", "1 Yıl"], default="1 Yıl")
+        m = 12 if "Yıl" in dur else int(dur.split()[0])
+        d2 = d1 + timedelta(days=m*30)
+    else:
+        d2 = st.date_input("Bitiş Tarihi", value=d1 + timedelta(days=30))
+    
     st.caption(f"📅 Bir Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
     
     notes = st.text_area("Notlar", height=80, placeholder="Veteriner adı, aşı markası vb...")
@@ -195,6 +198,7 @@ def logout():
 
 # --- ENTRY POINT ---
 if st.session_state["user"] is None:
+    # LANDING PAGE DESIGN
     st.markdown("<h1 style='text-align: center; color: #FF6B6B !important;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>Evcil hayvanlarınızın sağlığı, kontrol altında.</p>", unsafe_allow_html=True)
     st.write("")
@@ -210,6 +214,7 @@ if st.session_state["user"] is None:
     with tab2:
         st.caption("Şifresiz hızlı giriş (veya kayıt)")
         otp_e = st.text_input("Email", key="otp_e")
+        
         if not st.session_state["otp_sent"]:
             if st.button("Kod Gönder"):
                 try:
@@ -276,19 +281,21 @@ else:
                 st.caption("🚨 ACİL DURUMLAR & YAKLAŞANLAR")
                 for _, row in urgent.iterrows():
                     days = (row['next_due_date'] - today).days
+                    
                     bg_color = "rgba(255, 75, 75, 0.1)"
                     border_color = "#FF4B4B"
                     msg = f"{abs(days)} GÜN GEÇTİ" if days < 0 else f"{days} GÜN KALDI"
                     
                     st.markdown(f"""
-                    <div style="background-color: {bg_color}; border-left: 4px solid {border_color}; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="color: white; font-weight: bold; font-size: 16px;">{row['pet_name']}</div>
-                            <div style="color: #ccc; font-size: 14px;">{row['vaccine_type']}</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="color: {border_color}; font-weight: 800; font-size: 14px;">{msg}</div>
-                            <div style="color: #888; font-size: 12px;">{row['next_due_date'].strftime('%d.%m.%Y')}</div>
+                    <div class="css-card" style="border-left: 4px solid {border_color};">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h3 style="margin:0; font-size:18px; color:white;">{row['pet_name']} - {row['vaccine_type']}</h3>
+                                <p style="margin:0;">{row['next_due_date'].strftime('%d.%m.%Y')}</p>
+                            </div>
+                            <div style="background:{color}; padding:5px 10px; border-radius:15px; color:white; font-weight:bold; font-size:12px;">
+                                {msg}
+                            </div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -317,6 +324,7 @@ else:
                     
                     with t1:
                         future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
+                        
                         col_a, col_b = st.columns(2)
                         last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
                         col_a.metric("Kilo", f"{last_w} kg")
@@ -338,8 +346,8 @@ else:
                             column_config={
                                 "id": None, "user_id": None, "created_at": None, "pet_name": None,
                                 "vaccine_type": "Aşı",
-                                "date_applied": st.column_config.DateColumn("Yapıldı"),
-                                "next_due_date": st.column_config.DateColumn("Bitiş"),
+                                "date_applied": st.column_config.DateColumn("Yapıldı", format="DD.MM.YYYY"),
+                                "next_due_date": st.column_config.DateColumn("Bitiş", format="DD.MM.YYYY"),
                                 "weight": st.column_config.NumberColumn("Kg", format="%.1f"),
                                 "notes": "Not"
                             },
@@ -366,18 +374,20 @@ else:
                             fig.add_trace(go.Scatter(
                                 x=p_df["date_applied"], y=p_df["weight"],
                                 mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'),
-                                fill='tozeroy'
+                                fill='tozeroy',
+                                hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
                             ))
                             fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), 
                                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                                 xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#333'))
                             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                
                 st.write("---")
 
     # --- VIEW 3: SETTINGS ---
     elif selected == "Ayarlar":
         st.title("Ayarlar")
-        st.caption(f"Giriş: {st.session_state['user'].email}")
+        st.write(f"Giriş: {st.session_state['user'].email}")
         
         if st.button("Çıkış Yap", type="secondary"): logout()
         
@@ -388,4 +398,4 @@ else:
                 try:
                     supabase.auth.update_user({"password": new_p})
                     st.success("Başarılı!")
-                except Exception as e: st.error(f"Hata: {e}")
+                except Exception as e: st.error(str(e))
