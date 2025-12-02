@@ -103,9 +103,10 @@ def resend_confirmation(email):
 
 def reset_password(email):
     try:
-        # Sends a password reset email
-        supabase.auth.reset_password_email(email)
-        st.success("Şifre sıfırlama linki email adresinize gönderildi.")
+        # Added redirect_to to ensure it knows where to send the user back
+        # We use the generic streamlit URL, or you can hardcode your specific app url
+        supabase.auth.reset_password_email(email, options={"redirect_to": "https://paticheck.streamlit.app"})
+        st.success("Şifre sıfırlama linki email adresinize gönderildi (Spam klasörünü kontrol edin).")
     except Exception as e:
         st.error(f"Hata: {e}")
 
@@ -117,7 +118,6 @@ def logout():
 # --- DATA LOGIC ---
 def update_entries(edited_df):
     try:
-        # Convert date columns back to strings for JSON
         records = edited_df.to_dict('records')
         for r in records:
             r['date_applied'] = str(r['date_applied'])
@@ -173,7 +173,6 @@ else:
         if st.button("Çıkış Yap", use_container_width=True): logout()
     
     st.sidebar.title("🐾 PatiCheck")
-    # NEW: "Anasayfa" added to menu
     menu = st.sidebar.radio("Menü", ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt"])
 
     rows = supabase.table("vaccinations").select("*").execute().data
@@ -187,25 +186,21 @@ else:
         if df.empty:
             st.info("Henüz bir kayıt oluşturmadınız. Başlamak için 'Yeni Kayıt' menüsünü kullanın.")
         else:
-            # Prepare Dates
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             today = date.today()
             
             # KPI Cards
             col1, col2, col3 = st.columns(3)
             
-            # KPI 1: Pet Count
             pet_count = df["pet_name"].nunique()
             col1.metric("Evcil Hayvan", f"{pet_count} Adet")
             
-            # KPI 2: Upcoming in 30 Days
             upcoming = df[
                 (df["next_due_date"] >= today) & 
                 (df["next_due_date"] <= today + timedelta(days=30))
             ]
             col2.metric("Yaklaşan Aşılar", f"{len(upcoming)} Adet")
             
-            # KPI 3: Overdue
             overdue = df[df["next_due_date"] < today]
             col3.metric("Gecikmiş", f"{len(overdue)} Adet", delta_color="inverse")
             
@@ -267,10 +262,18 @@ else:
                     
                     st.write("---")
                     
-                    # Chart
+                    notes_df = p_df.sort_values("date_applied", ascending=False)
+                    valid_notes = [n for n in notes_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
+                    if valid_notes:
+                        st.info(f"ℹ️ **Veteriner / Not:** {valid_notes[0]}")
+
+                    st.write("---")
+                    
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
+                        st.caption(f"{pet} için kilo değişim grafiği.")
                         chart_df = p_df.sort_values("date_applied")
+
                         fig = go.Figure()
                         fig.add_trace(go.Scatter(
                             x=chart_df["date_applied"], y=chart_df["weight"],
@@ -294,7 +297,6 @@ else:
                     
                     st.write("---")
                     
-                    # EDITABLE TABLE
                     st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye tıklayın)")
                     edit_df = p_df.copy()
                     
@@ -319,8 +321,8 @@ else:
     elif menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
         
-        # Initialize Session State for Clearing
-        if 'w_input' not in st.session_state: st.session_state.w_input = 0.0
+        # Initialize key for clear functionality
+        if 'w_input' not in st.session_state: st.session_state.w_input = None
         
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
@@ -333,27 +335,39 @@ else:
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
             
-            # Weight Input with Key for Clearing
-            w = st.number_input("Kilo (kg)", step=0.1, key="weight_val", value=st.session_state.w_input)
+            # FIX: Weight Input with value=None for blank start
+            w = st.number_input("Kilo (kg) - Sadece rakam", step=0.1, key="weight_val", value=st.session_state.w_input, placeholder="0.0")
             
             if st.button("Kilo Sıfırla"):
-                st.session_state.w_input = 0.0
+                st.session_state.w_input = None
                 st.rerun()
 
         with c2:
-            d1 = st.date_input("Tarih")
-            dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
-            if "Yıl" in dur: m = 12
-            else: m = int(dur.split()[0])
-            d2 = d1 + timedelta(days=m*30)
+            d1 = st.date_input("Uygulama Tarihi")
+            
+            # FIX: Manual Date Logic
+            mode = st.radio("Tarih Hesaplama", ["Otomatik (Süre Seç)", "Manuel (Tarih Seç)"], horizontal=True, label_visibility="collapsed")
+            
+            if mode == "Otomatik (Süre Seç)":
+                dur = st.selectbox("Süre", ["1 Ay", "2 Ay", "1 Yıl"])
+                if "Yıl" in dur: m = 12
+                else: m = int(dur.split()[0])
+                d2 = d1 + timedelta(days=m*30)
+            else:
+                d2 = st.date_input("Sonraki Tarih", min_value=d1)
+                
             st.info(f"Sonraki Tarih: {d2.strftime('%d.%m.%Y')}")
+            
             notes = st.text_area("Notlar / Veteriner Bilgisi (Opsiyonel)", placeholder="Sadece yeni bilgi varsa yazın.")
 
         if st.button("Kaydet", type="primary"):
+            # Ensure weight is not None before saving
+            final_w = w if w is not None else 0.0
+            
             data = {
                 "user_id": st.session_state["user"].id,
                 "pet_name": pet, "vaccine_type": vac,
-                "date_applied": str(d1), "next_due_date": str(d2), "weight": w,
+                "date_applied": str(d1), "next_due_date": str(d2), "weight": final_w,
                 "notes": notes
             }
             supabase.table("vaccinations").insert(data).execute()
