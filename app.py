@@ -66,10 +66,25 @@ if not supabase:
     st.error("Lütfen Streamlit Secrets ayarlarını yapınız.")
     st.stop()
 
-# --- AUTH LOGIC ---
-if "user" not in st.session_state:
-    st.session_state["user"] = None
+# --- STATE INITIALIZATION ---
+if "user" not in st.session_state: st.session_state["user"] = None
+if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
+# Initialize Input Keys for Callbacks
+if "input_weight" not in st.session_state: st.session_state.input_weight = None
+if "input_pet" not in st.session_state: st.session_state.input_pet = ""
+if "input_notes" not in st.session_state: st.session_state.input_notes = ""
 
+# --- CALLBACKS (The "Expert" Fix) ---
+# Functions that run BEFORE the app reloads to safely modify state
+def clear_form_callback():
+    st.session_state.input_weight = None
+    st.session_state.input_pet = ""
+    st.session_state.input_notes = ""
+
+def set_page_callback(index):
+    st.session_state.page_index = index
+
+# --- AUTH FUNCTIONS ---
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -94,21 +109,29 @@ def register(email, password):
     except Exception as e:
         st.error(f"Kayıt Hatası: {e}")
 
-def resend_confirmation(email):
+def send_otp(email):
     try:
-        supabase.auth.resend_otp({"type": "signup", "email": email})
-        st.success(f"{email} adresine onay maili tekrar gönderildi.")
+        supabase.auth.sign_in_with_otp({"email": email})
+        st.session_state["otp_sent"] = True
+        st.success("Doğrulama kodu email adresinize gönderildi!")
     except Exception as e:
         st.error(f"Hata: {e}")
 
-def reset_password(email):
+def verify_otp(email, token):
     try:
-        # Standard reset flow
-        supabase.auth.reset_password_email(email, options={"redirect_to": "https://paticheck.streamlit.app"})
-        st.success("Şifre sıfırlama linki gönderildi. Linke tıkladıktan sonra otomatik giriş yapacaksınız.")
-        st.info("Giriş yaptıktan sonra 'Ayarlar' menüsünden yeni şifrenizi belirlemeyi unutmayın!")
+        res = supabase.auth.verify_otp({"email": email, "token": token, "type": "magiclink"})
+        if res.user:
+            st.session_state["user"] = res.user
+            st.session_state["otp_sent"] = False
+            st.success("Giriş Başarılı!")
+            st.rerun()
     except Exception as e:
-        st.error(f"Hata: {e}")
+        st.error(f"Kod Hatalı veya Süresi Dolmuş: {e}")
+
+def logout():
+    supabase.auth.sign_out()
+    st.session_state["user"] = None
+    st.rerun()
 
 def update_password(new_password):
     try:
@@ -116,24 +139,6 @@ def update_password(new_password):
         st.success("Şifreniz başarıyla güncellendi!")
     except Exception as e:
         st.error(f"Hata: {e}")
-
-def logout():
-    supabase.auth.sign_out()
-    st.session_state["user"] = None
-    st.rerun()
-
-# --- STATE & NAVIGATION (FIXED) ---
-# We use a page_index to control the radio button safely
-if 'page_index' not in st.session_state:
-    st.session_state.page_index = 0
-
-def set_page(index):
-    st.session_state.page_index = index
-
-def clear_new_entry_form():
-    st.session_state['input_pet'] = ""
-    st.session_state['input_weight'] = None
-    st.session_state['input_notes'] = ""
 
 # --- DATA LOGIC ---
 def update_entries(edited_df):
@@ -149,11 +154,35 @@ def update_entries(edited_df):
     except Exception as e:
         st.error(f"Güncelleme Hatası: {e}")
 
+def save_new_entry(user_id, pet, vac, d1, d2, w, notes):
+    try:
+        # Validate inputs
+        final_w = w if w is not None else 0.0
+        
+        data = {
+            "user_id": user_id,
+            "pet_name": pet, 
+            "vaccine_type": vac,
+            "date_applied": str(d1), 
+            "next_due_date": str(d2), 
+            "weight": final_w,
+            "notes": notes
+        }
+        supabase.table("vaccinations").insert(data).execute()
+        st.success("✅ Kayıt Başarıyla Eklendi!")
+        # Calls the callback manually here since we are inside logic
+        clear_form_callback()
+        time.sleep(0.5)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Kaydetme Hatası: {e}")
+
 # --- APP FLOW ---
 if st.session_state["user"] is None:
     st.title("🐾 PatiCheck")
     
-    tab1, tab2, tab3 = st.tabs(["Giriş Yap", "Kayıt Ol", "Şifremi Unuttum"])
+    # REPLACED "Forgot Password" with "Kod ile Giriş" (OTP)
+    tab1, tab2, tab3 = st.tabs(["Giriş Yap", "Kayıt Ol", "Kod ile Giriş (Şifresiz)"])
     
     with tab1:
         with st.form("login_form"):
@@ -170,19 +199,22 @@ if st.session_state["user"] is None:
             st.write("")
             if st.form_submit_button("Kayıt Ol", type="primary", use_container_width=True): 
                 register(ne, np)
-        st.write("---")
-        st.caption("Mail gelmedi mi?")
-        resend_email = st.text_input("Email Adresi", key="resend_mail", placeholder="Onay maili gelmeyen adres")
-        if st.button("Onay Mailini Tekrar Gönder"):
-            if resend_email: resend_confirmation(resend_email)
-            else: st.warning("Lütfen email adresi girin.")
 
     with tab3:
-        st.write("Şifrenizi sıfırlamak için email adresinizi girin.")
-        reset_email = st.text_input("Email", key="reset_mail")
-        if st.button("Sıfırlama Linki Gönder", type="primary"):
-            if reset_email: reset_password(reset_email)
-            else: st.warning("Email adresi gerekli.")
+        st.write("Şifrenizi unuttuysanız veya şifresiz girmek isterseniz:")
+        otp_email = st.text_input("Email", key="otp_email_input")
+        
+        if not st.session_state["otp_sent"]:
+            if st.button("Doğrulama Kodu Gönder", type="primary"):
+                if otp_email: send_otp(otp_email)
+                else: st.warning("Email gerekli.")
+        else:
+            otp_code = st.text_input("Emailinize gelen 6 haneli kod:", placeholder="123456")
+            if st.button("Giriş Yap (Kod ile)", type="primary"):
+                verify_otp(otp_email, otp_code)
+            if st.button("Vazgeç / Tekrar Dene"):
+                st.session_state["otp_sent"] = False
+                st.rerun()
 
 else:
     # --- LOGGED IN ---
@@ -192,63 +224,48 @@ else:
     
     st.sidebar.title("🐾 PatiCheck")
     
-    # NAVIGATION MENU (Index Controlled)
+    if 'page_index' not in st.session_state: st.session_state.page_index = 0
     menu_options = ["Anasayfa", "Evcil Hayvanlar", "Yeni Kayıt", "Ayarlar"]
     
-    # Ensure index is valid
-    if st.session_state.page_index >= len(menu_options):
-        st.session_state.page_index = 0
+    # Ensure index validity
+    if st.session_state.page_index >= len(menu_options): st.session_state.page_index = 0
         
     selected_menu = st.sidebar.radio("Menü", menu_options, index=st.session_state.page_index)
-
-    # Logic: If user clicked radio manually, update index for next time
-    # This keeps buttons and radio in sync
+    
+    # Sync Sidebar
     new_index = menu_options.index(selected_menu)
     if new_index != st.session_state.page_index:
         st.session_state.page_index = new_index
         st.rerun()
 
-    # Load Data
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
-    # --- 1. HOME (DASHBOARD) ---
+    # --- 1. HOME ---
     if selected_menu == "Anasayfa":
         st.header("👋 Hoşgeldiniz!")
         
         if df.empty:
             st.info("Henüz bir kayıt oluşturmadınız.")
-            if st.button("➕ İlk Kaydınızı Oluşturun", type="primary"):
-                set_page(2) # Index of 'Yeni Kayıt'
-                st.rerun()
+            if st.button("➕ İlk Kaydınızı Oluşturun", type="primary", on_click=set_page_callback, args=(2,)):
+                pass # Callback handles state
         else:
-            # Safe Date Conversion
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
-            df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
-            
             today = date.today()
-            col1, col2, col3 = st.columns(3)
-            pet_count = df["pet_name"].nunique()
-            col1.metric("Evcil Hayvan", f"{pet_count} Adet")
             
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Evcil Hayvan", f"{df['pet_name'].nunique()} Adet")
             upcoming = df[(df["next_due_date"] >= today) & (df["next_due_date"] <= today + timedelta(days=30))]
             col2.metric("Yaklaşan Aşılar", f"{len(upcoming)} Adet")
-            
             overdue = df[df["next_due_date"] < today]
             col3.metric("Gecikmiş", f"{len(overdue)} Adet", delta_color="inverse")
             
             st.write("---")
-            
-            # ACTION BUTTONS (SAFE NAVIGATION)
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("📋 Kayıtları İncele", use_container_width=True):
-                    set_page(1) # Index of 'Evcil Hayvanlar'
-                    st.rerun()
+                if st.button("📋 Kayıtları İncele", use_container_width=True, on_click=set_page_callback, args=(1,)): pass
             with c2:
-                if st.button("➕ Yeni Aşı Ekle", type="primary", use_container_width=True):
-                    set_page(2) # Index of 'Yeni Kayıt'
-                    st.rerun()
+                if st.button("➕ Yeni Aşı Ekle", type="primary", use_container_width=True, on_click=set_page_callback, args=(2,)): pass
 
             st.subheader("⚠️ Durum Özeti")
             if not overdue.empty:
@@ -267,7 +284,6 @@ else:
         if df.empty:
             st.info("Kayıt yok.")
         else:
-            # Re-convert here to be safe for this view's logic
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             df["date_applied"] = pd.to_datetime(df["date_applied"]).dt.date
             df = df.sort_values("next_due_date")
@@ -276,21 +292,19 @@ else:
             for pet in pets:
                 p_df = df[df["pet_name"] == pet]
                 today = date.today()
-                closest_date = p_df["next_due_date"].min()
-                days_until = (closest_date - today).days
-                
+                closest = p_df["next_due_date"].min()
+                days = (closest - today).days
                 status = "✅ İyi"
-                if days_until < 0: status = f"⚠️ Gecikti!"
-                elif days_until < 7: status = f"🚨 {days_until} Gün Kaldı!"
-                elif days_until < 30: status = f"⚠️ Yaklaşıyor"
+                if days < 0: status = f"⚠️ Gecikti!"
+                elif days < 7: status = f"🚨 {days} Gün Kaldı!"
+                elif days < 30: status = f"⚠️ Yaklaşıyor"
 
-                future_vax = p_df[p_df["next_due_date"] >= today]
-                future_vax = future_vax.sort_values("next_due_date")
+                future_vax = p_df[p_df["next_due_date"] >= today].sort_values("next_due_date")
 
                 with st.expander(f"{pet} | {status}"):
                     c1, c2 = st.columns(2)
-                    last_weight = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
-                    c1.metric("Son Kilo", f"{last_weight} kg")
+                    last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
+                    c1.metric("Son Kilo", f"{last_w} kg")
                     
                     with c2:
                         st.caption("Sıradaki İşlemler")
@@ -307,55 +321,38 @@ else:
                     
                     st.write("---")
                     
-                    notes_df = p_df.sort_values("date_applied", ascending=False)
-                    valid_notes = [n for n in notes_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
-                    if valid_notes:
-                        st.info(f"ℹ️ **Veteriner / Not:** {valid_notes[0]}")
-
-                    st.write("---")
-                    
+                    # Chart
                     if len(p_df) > 0:
                         st.subheader("📉 Kilo Geçmişi")
                         chart_df = p_df.sort_values("date_applied")
                         fig = go.Figure()
-                        fig.add_trace(go.Scatter(
-                            x=chart_df["date_applied"], y=chart_df["weight"],
+                        fig.add_trace(go.Scatter(x=chart_df["date_applied"], y=chart_df["weight"],
                             mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'),
                             marker=dict(size=8, color='#0E1117', line=dict(color='#FF6B6B', width=2)),
-                            fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)', name='Kilo',
-                            hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
-                        ))
+                            fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)', name='Kilo'))
                         if len(chart_df) == 1:
                             val = chart_df["weight"].iloc[0]
                             fig.add_hline(y=val, line_dash="dot", line_color="#444", annotation_text="Başlangıç", annotation_position="top right")
-
-                        fig.update_layout(
-                            height=250, margin=dict(t=10,b=0,l=0,r=0), 
+                        fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), 
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                            xaxis=dict(showgrid=False, showline=False, tickformat="%d.%m"),
-                            yaxis=dict(showgrid=True, gridcolor='#262730', zeroline=False),
-                            hovermode="x unified"
-                        )
+                            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#262730'))
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                     
                     st.write("---")
-                    
                     st.caption("📜 Geçmiş İşlemler (Düzenlemek için hücreye tıklayın)")
-                    edit_df = p_df.copy()
                     
-                    edited_data = st.data_editor(
-                        edit_df,
-                        column_config={
-                            "id": None, "user_id": None, "created_at": None,
-                            "pet_name": st.column_config.TextColumn("İsim", disabled=True),
-                            "vaccine_type": "Aşı Tipi",
-                            "date_applied": st.column_config.DateColumn("Yapılan Tarih", format="DD.MM.YYYY"),
-                            "next_due_date": st.column_config.DateColumn("Sonraki Tarih", format="DD.MM.YYYY"),
-                            "weight": st.column_config.NumberColumn("Kilo", format="%.1f"),
-                            "notes": "Notlar"
-                        },
-                        hide_index=True, use_container_width=True, key=f"editor_{pet}"
-                    )
+                    # Editor
+                    edit_df = p_df.copy()
+                    edited_data = st.data_editor(edit_df, column_config={
+                        "id": None, "user_id": None, "created_at": None,
+                        "pet_name": st.column_config.TextColumn("İsim", disabled=True),
+                        "vaccine_type": "Aşı Tipi",
+                        "date_applied": st.column_config.DateColumn("Yapılan Tarih", format="DD.MM.YYYY"),
+                        "next_due_date": st.column_config.DateColumn("Sonraki Tarih", format="DD.MM.YYYY"),
+                        "weight": st.column_config.NumberColumn("Kilo", format="%.1f"),
+                        "notes": "Notlar"
+                    }, hide_index=True, use_container_width=True, key=f"editor_{pet}")
+                    
                     if not edited_data.equals(p_df):
                         if st.button("💾 Değişiklikleri Kaydet", key=f"save_{pet}"):
                             update_entries(edited_data)
@@ -364,39 +361,36 @@ else:
     elif selected_menu == "Yeni Kayıt":
         st.header("💉 Yeni Giriş")
         
-        # Keys for clearing
-        if 'input_pet' not in st.session_state: st.session_state['input_pet'] = ""
-        if 'input_weight' not in st.session_state: st.session_state['input_weight'] = None
-        if 'input_notes' not in st.session_state: st.session_state['input_notes'] = ""
-        
         c1, c2 = st.columns(2)
         existing_pets = list(df["pet_name"].unique()) if not df.empty else []
         opts = existing_pets + ["➕ Yeni Ekle..."]
         
         with c1:
+            # We use state to persist selection if they clear form
             sel = st.selectbox("Evcil Hayvan", opts)
             
             # Logic: If 'Add New', use text input. Else, use the selection.
-            # We must handle the input_pet state carefully.
+            # We check if input_pet was cleared by callback
+            default_pet_val = st.session_state.input_pet 
+            
             if sel == "➕ Yeni Ekle...":
                 pet = st.text_input("İsim", key="input_pet")
             else:
                 pet = sel
-                # Keep the text input sync in case they toggle back and forth, 
-                # but for now 'pet' variable holds the correct value
+                # Update text input state so it doesn't stay populated if they switch back
+                # But we don't force write it to avoid loop
             
             vaccine_list = ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"]
             vac = st.selectbox("İşlem", vaccine_list)
             
-            # Weight
+            # Weight - Controlled by Session State
             w = st.number_input("Kilo (kg) - Sadece rakam", step=0.1, key="input_weight", value=None, placeholder="0.0")
             
-            if st.button("Kilo Sıfırla"):
-                st.session_state.input_weight = None
-                st.rerun()
+            # Clear Button (Uses Callback)
+            st.button("Kilo Sıfırla", on_click=clear_form_callback)
 
         with c2:
-            d1 = st.date_input("Uygulama Tarihi")
+            d1 = st.date_input("Tarih")
             
             mode = st.radio("Tarih Hesaplama", ["Otomatik (Süre Seç)", "Manuel (Tarih Seç)"], horizontal=True, label_visibility="collapsed")
             
@@ -418,26 +412,13 @@ else:
             if not final_pet:
                 st.warning("Lütfen bir isim girin.")
             else:
-                final_w = w if w is not None else 0.0
-                data = {
-                    "user_id": st.session_state["user"].id,
-                    "pet_name": final_pet, "vaccine_type": vac,
-                    "date_applied": str(d1), "next_due_date": str(d2), "weight": final_w,
-                    "notes": notes
-                }
-                supabase.table("vaccinations").insert(data).execute()
-                st.success("✅ Kayıt Başarıyla Eklendi!")
-                
-                # Clear Form
-                clear_new_entry_form()
-                time.sleep(0.5)
-                st.rerun()
+                save_new_entry(st.session_state["user"].id, final_pet, vac, d1, d2, w, notes)
 
     # --- 4. SETTINGS ---
     elif selected_menu == "Ayarlar":
         st.header("⚙️ Ayarlar")
         st.subheader("Şifre Değiştir")
-        st.info("Şifre sıfırlama linkine tıkladıysanız buradan yeni şifrenizi belirleyebilirsiniz.")
+        st.info("Kod ile giriş yaptıysanız buradan kalıcı şifrenizi belirleyebilirsiniz.")
         
         with st.form("pwd_form"):
             new_pass = st.text_input("Yeni Şifre", type="password")
