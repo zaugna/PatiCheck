@@ -21,32 +21,32 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- DESIGN SYSTEM: "CLEAN LIGHT" ---
+# --- CSS: THE "AIRY LIGHT" THEME ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. GLOBAL RESET */
+    /* 1. Global Reset */
     * { font-family: 'Inter', sans-serif; }
     
-    /* 2. BACKGROUND (Soft Off-White) */
-    .stApp { background-color: #F7F9FC; }
+    /* 2. Background */
+    .stApp { background-color: #F8F9FB; } /* Ultra-soft blue-grey */
     
-    /* 3. TYPOGRAPHY */
+    /* 3. Typography */
     h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
     p, label, span, li, div { color: #4A5568 !important; }
     
-    /* 4. CARDS (White + Soft Shadow) */
+    /* 4. CARDS (More Breathing Room) */
     div.css-card {
         background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid #EEF2F6;
+        border-radius: 20px; /* Softer corners */
+        padding: 24px; /* More space */
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
     }
     
-    /* 5. BUTTONS (Vibrant & Tactile) */
+    /* 5. BUTTONS (Primary) */
     div.stButton > button {
         width: 100%;
         border-radius: 12px;
@@ -55,91 +55,87 @@ st.markdown("""
         color: white !important;
         border: none;
         font-weight: 600;
-        box-shadow: 0 4px 14px 0 rgba(255, 107, 107, 0.39);
+        box-shadow: 0 4px 10px rgba(255, 107, 107, 0.2);
         transition: transform 0.2s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
-        transform: scale(1.02);
+        transform: translateY(-2px);
+    }
+    
+    /* 6. "ISLEM EKLE" BUTTON (Secondary but Visible) */
+    /* We target specific keys or rely on 'kind=secondary' logic */
+    button[kind="secondary"] {
+        background-color: #FFF0F0 !important; /* Very faint red bg */
+        color: #FF6B6B !important;
+        border: 1px solid #FF6B6B !important;
+        font-weight: 600 !important;
+    }
+    button[kind="secondary"]:hover {
+        background-color: #FF6B6B !important;
         color: white !important;
     }
-    /* Secondary Button Override */
-    button[kind="secondary"] {
-        background-color: #EDF2F7 !important;
-        color: #2D3748 !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
 
-    /* 6. INPUTS (Clean White) */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+    /* 7. TABS (The "Segmented Control" Look) */
+    .stTabs [data-baseweb="tab-list"] { 
+        gap: 10px; 
+        background-color: #F1F3F5; 
+        padding: 5px; 
+        border-radius: 12px; 
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        background-color: transparent;
+        border-radius: 8px;
+        color: #718096;
+        border: none;
+        font-weight: 600;
+        flex-grow: 1; /* Stretch to fill */
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FFFFFF;
+        color: #FF6B6B !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    /* 8. EXPANDER HEADER (High Visibility) */
+    .streamlit-expanderHeader {
+        background-color: #FFFFFF !important;
+        border: 2px solid #F1F3F5;
+        border-radius: 12px;
+        color: #2D3748 !important;
+        padding: 15px !important;
+    }
+    .streamlit-expanderHeader:hover {
+        border-color: #FF6B6B;
+        color: #FF6B6B !important;
+    }
+    .streamlit-expanderHeader p { 
+        font-size: 15px; font-weight: 600; 
+    }
+    div[data-testid="stExpander"] { border: none; }
+    
+    /* 9. INPUTS */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
         border: 2px solid #E2E8F0 !important;
         border-radius: 10px;
-        padding-left: 10px;
-    }
-    .stTextInput input:focus, .stNumberInput input:focus {
-        border-color: #FF6B6B !important;
     }
     
-    /* 7. DROPDOWNS */
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    li[role="option"] { color: #2D3748 !important; }
-    li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
+    /* 10. METRICS */
+    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
+    [data-testid="stMetricLabel"] { font-size: 13px !important; color: #718096 !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* 8. TABS */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; }
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        background-color: #FFFFFF;
-        border-radius: 8px;
-        color: #718096;
-        border: 1px solid #E2E8F0;
-        font-weight: 500;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FF6B6B;
-        color: white !important;
-        border: none;
-    }
+    /* 11. PLOTLY & UTILS */
+    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
+    div[data-testid="InputInstructions"] { display: none !important; }
+    [data-testid="stDataFrame"] { background-color: white; border: 1px solid #E2E8F0; }
     
-    /* 9. METRICS */
-    [data-testid="stMetricValue"] { font-size: 28px !important; color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { font-size: 14px !important; color: #718096 !important; font-weight: 500; }
-    
-    /* 10. EXPANDER (Clean Card Style) */
-    .streamlit-expanderHeader {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        color: #2D3748 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    .streamlit-expanderHeader:hover { border-color: #FF6B6B; color: #FF6B6B !important; }
-    div[data-testid="stExpander"] { border: none; }
-    .streamlit-expanderContent {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-top: none;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        padding: 20px;
-    }
-
-    /* 11. HIDE UTILS */
+    /* Hide Sidebar/Footer */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
-    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
-    div[data-testid="InputInstructions"] { display: none !important; }
-    
-    /* 12. TABLE FIX */
-    [data-testid="stDataFrame"] { background-color: white; border: 1px solid #E2E8F0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -152,7 +148,7 @@ if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
-# --- MODERN DIALOGS ---
+# --- DIALOGS ---
 @st.dialog("💉 Yeni Aşı Kaydı")
 def add_vaccine_dialog(existing_pets, default_pet=None):
     index = 0
@@ -175,7 +171,6 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
 
     d1 = st.date_input("Yapılan Tarih")
-    
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
     
     if mode == "Otomatik":
@@ -209,7 +204,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# --- AUTH LOGIC ---
+# --- AUTH ---
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -225,15 +220,13 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --- ENTRY POINT ---
+# --- ENTRY ---
 if st.session_state["user"] is None:
-    # CLEAN LIGHT LANDING PAGE
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #718096 !important; font-size: 1.2rem; margin-top: -10px;'>Akıllı, güvenli ve modern evcil hayvan takibi.</p>", unsafe_allow_html=True)
     st.write("")
     
-    # White Card Container for Login
     with st.container():
         st.markdown('<div class="css-card">', unsafe_allow_html=True)
         tab1, tab2 = st.tabs(["Giriş Yap", "Kod ile Gir"])
@@ -273,7 +266,6 @@ if st.session_state["user"] is None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- MODERN NAV (Light Theme) ---
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Evcil Hayvanlarım", "Ayarlar"],
@@ -290,7 +282,7 @@ else:
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
-    # --- VIEW: HOME ---
+    # --- HOME ---
     if selected == "Ana Sayfa":
         c1, c2 = st.columns([3, 1])
         c1.subheader(f"👋 Merhaba")
@@ -304,9 +296,7 @@ else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             today = date.today()
             
-            # STATS
             k1, k2, k3 = st.columns(3)
-            # Custom styled metric container using HTML
             def styled_metric(label, value, color="#1A202C"):
                 st.markdown(f"""
                 <div style="background:white; padding:15px; border-radius:12px; border:1px solid #E2E8F0; text-align:center;">
@@ -331,13 +321,13 @@ else:
                 for _, row in urgent.iterrows():
                     days = (row['next_due_date'] - today).days
                     if days < 0:
-                        colors = ("#FFF5F5", "#C53030") # Red bg, Red text
+                        colors = ("#FFF5F5", "#C53030")
                         msg = f"{abs(days)} GÜN GEÇTİ"
                     elif days <= 3:
-                        colors = ("#FFFAF0", "#C05621") # Orange
+                        colors = ("#FFFAF0", "#C05621")
                         msg = f"{days} GÜN KALDI"
                     else:
-                        colors = ("#F0FFF4", "#2F855A") # Green
+                        colors = ("#F0FFF4", "#2F855A")
                         msg = f"{days} GÜN VAR"
                     
                     st.markdown(f"""
@@ -355,7 +345,7 @@ else:
             else:
                 st.success("Harika! Önümüzdeki 7 gün içinde acil bir durum yok.")
 
-    # --- VIEW: PETS ---
+    # --- PETS ---
     elif selected == "Evcil Hayvanlarım":
         if df.empty:
             st.warning("Profil bulunamadı.")
@@ -367,21 +357,19 @@ else:
             for pet in pets:
                 p_df = df[df["pet_name"] == pet].sort_values("date_applied")
                 
-                # Card Container
                 with st.container():
                     c_head1, c_head2 = st.columns([3, 1])
                     c_head1.subheader(f"🐾 {pet}")
-                    if c_head2.button("İşlem Ekle", key=f"btn_{pet}"):
+                    # Styled Secondary Button
+                    if c_head2.button("İşlem Ekle", key=f"btn_{pet}", type="secondary"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
-                    # Styled Expander (The Card)
                     with st.expander("Detayları Göster", expanded=True):
                         t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
                         
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
                             col_a, col_b = st.columns(2)
-                            
                             last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
                             col_a.metric("Kilo", f"{last_w} kg")
                             
@@ -396,7 +384,10 @@ else:
                                 st.info(f"📝 {valid_notes[-1]}")
 
                         with t2:
+                            # FIX: Convert date to datetime before sending to editor to avoid Attribute Error
                             edit_df = p_df.copy()
+                            edit_df["date_applied"] = pd.to_datetime(edit_df["date_applied"])
+                            
                             edited = st.data_editor(
                                 edit_df,
                                 column_config={
@@ -446,7 +437,7 @@ else:
                                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                 st.write("---")
 
-    # --- VIEW: SETTINGS ---
+    # --- SETTINGS ---
     elif selected == "Ayarlar":
         st.title("Ayarlar")
         st.write(f"Giriş: {st.session_state['user'].email}")
