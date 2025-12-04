@@ -21,14 +21,14 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: RESPONSIVE DESIGN SYSTEM ---
+# --- CSS: DESIGN DIRECTOR EDITION ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. UNIVERSAL RESET & LIGHT MODE FORCE */
+    /* 1. UNIVERSAL RESET (Force Light Mode) */
     :root { color-scheme: light !important; }
-    * { font-family: 'Inter', sans-serif; }
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     .stApp { background-color: #F8F9FA !important; color: #1A202C !important; }
     
     /* 2. TYPOGRAPHY */
@@ -45,7 +45,7 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     
-    /* 4. BUTTONS (Primary) */
+    /* 4. BUTTONS */
     div.stButton > button {
         width: 100%;
         border-radius: 12px;
@@ -55,16 +55,10 @@ st.markdown("""
         border: none;
         font-weight: 700;
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
-        transition: transform 0.1s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
         transform: scale(1.01);
-        color: white !important;
-    }
-    div.stButton > button:active {
-        color: white !important;
-        background-color: #FA5252 !important;
     }
     
     /* Secondary Button (Grey Outline) */
@@ -80,29 +74,13 @@ st.markdown("""
         background-color: #FFF5F5 !important;
     }
 
-    /* 5. EXPANDER FIX (The Black Bar Killer) */
-    /* We force White background on ALL states (Hover, Focus, Active, Open) */
-    .streamlit-expanderHeader, 
-    .streamlit-expanderHeader:hover, 
-    .streamlit-expanderHeader:focus, 
-    .streamlit-expanderHeader:active,
-    details[open] > summary {
+    /* 5. MODAL / DIALOG FIX (Mobile Dark Mode Killer) */
+    div[role="dialog"] {
         background-color: #FFFFFF !important;
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 12px !important;
         color: #1A202C !important;
-        opacity: 1 !important;
     }
-    .streamlit-expanderHeader p { color: #1A202C !important; font-weight: 600; font-size: 15px; }
-    div[data-testid="stExpander"] { border: none; box-shadow: none; background-color: transparent !important; }
-    .streamlit-expanderContent {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-top: none;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        padding: 20px;
-        margin-top: -8px; /* Connects smoothly to header */
+    div[role="dialog"] h2, div[role="dialog"] label, div[role="dialog"] p {
+        color: #1A202C !important;
     }
 
     /* 6. INPUTS & DROPDOWNS */
@@ -113,6 +91,7 @@ st.markdown("""
         border-radius: 10px;
     }
     
+    /* Dropdown Menu Items */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E2E8F0;
@@ -120,28 +99,61 @@ st.markdown("""
     li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
     li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
     
-    /* 7. TABS (Segmented Control) */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; }
+    /* 7. TABS (THE "SPACED OUT" DESIGN IS BACK) */
+    /* Container for the tabs - Grey Background */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #F1F3F5; /* Grey pill container */
+        padding: 5px;
+        border-radius: 12px;
+        border: none;
+    }
+    /* Individual Tabs - Transparent by default */
     .stTabs [data-baseweb="tab"] {
         height: 40px;
-        background-color: #FFFFFF;
-        border-radius: 20px;
+        background-color: transparent;
+        border-radius: 8px;
         color: #718096;
-        border: 1px solid #E2E8F0;
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FF6B6B;
-        color: white !important;
         border: none;
-        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
+        font-weight: 600;
+        flex-grow: 1; /* Force equal width */
+    }
+    /* Active Tab - White Card style */
+    .stTabs [aria-selected="true"] {
+        background-color: #FFFFFF;
+        color: #FF6B6B !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
-    /* 8. METRICS */
-    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
+    /* 8. EXPANDER HEADER */
+    .streamlit-expanderHeader {
+        background-color: #FFFFFF !important;
+        border: 2px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        color: #1A202C !important;
+        font-weight: 600 !important;
+    }
+    .streamlit-expanderHeader:hover {
+        border-color: #FF6B6B !important;
+        color: #FF6B6B !important;
+    }
+    /* Inner text color force */
+    .streamlit-expanderHeader p { color: inherit !important; }
+    div[data-testid="stExpander"] { border: none; box-shadow: none; }
+    .streamlit-expanderContent {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-top: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 20px;
+        margin-top: -8px;
+    }
+
+    /* 9. METRICS & UTILS */
+    [data-testid="stMetricValue"] { color: #1A202C !important; font-weight: 800; }
+    [data-testid="stMetricLabel"] { color: #718096 !important; font-weight: 600; }
     
-    /* 9. UTILS */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
@@ -149,22 +161,23 @@ st.markdown("""
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* --- 10. MOBILE SPECIFIC OVERRIDES --- */
+    /* --- 10. MOBILE SPECIFIC TWEAKS --- */
     @media only screen and (max-width: 600px) {
-        /* Fix the "Aşı Ekle" button alignment on mobile */
-        div[data-testid="column"] button {
-            width: 100% !important;
-            margin-top: 10px !important;
+        /* Fix Nav Wrap */
+        .nav-link { 
+            font-size: 13px !important; 
+            padding: 5px !important;
+            white-space: nowrap !important; /* Force single line */
         }
         
-        /* Adjust Font Sizes for small screens */
-        h1 { font-size: 28px !important; }
-        h2 { font-size: 22px !important; }
-        h3 { font-size: 18px !important; }
+        /* Fix Aşı Ekle Button Width */
+        div[data-testid="column"] button {
+            width: 100% !important;
+        }
         
-        /* Navigation Bar Padding */
-        iframe[title="streamlit_option_menu.option_menu"] {
-            margin-bottom: 10px !important;
+        /* Dialog Width on Mobile */
+        div[role="dialog"] {
+            width: 95vw !important;
         }
     }
 </style>
@@ -199,7 +212,8 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     with c1:
         vac = st.selectbox("Aşı / İşlem", ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
     with c2:
-        w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
+        # CHANGED: Default value is 0.0 so buttons work immediately
+        w = st.number_input("Kilo (kg)", step=0.1, value=0.0)
 
     d1 = st.date_input("Yapılan Tarih")
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
@@ -225,7 +239,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
                     "vaccine_type": vac,
                     "date_applied": str(d1),
                     "next_due_date": str(d2),
-                    "weight": w if w else 0.0,
+                    "weight": w,
                     "notes": notes
                 }
                 supabase.table("vaccinations").insert(data).execute()
@@ -270,7 +284,7 @@ if st.session_state["user"] is None:
                 st.write("")
                 if st.form_submit_button("Giriş Yap", type="primary"):
                     login(email, password)
-            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden otomatik oluşturun.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
 
         with tab2:
             st.markdown("### Hızlı Giriş")
@@ -300,7 +314,7 @@ else:
     # --- NAVIGATION ---
     selected = option_menu(
         menu_title=None,
-        options=["Ana Sayfa", "Profiller", "Ayarlar"], # Renamed for Mobile fit
+        options=["Ana Sayfa", "Profiller", "Ayarlar"],
         icons=["house-fill", "heart-fill", "gear-fill"],
         default_index=0,
         orientation="horizontal",
@@ -379,7 +393,7 @@ else:
             else:
                 st.success("Harika! Önümüzdeki 7 gün içinde acil bir durum yok.")
 
-    # --- PROFILES ---
+    # --- PETS ---
     elif selected == "Profiller":
         if df.empty:
             st.warning("Profil bulunamadı.")
@@ -404,7 +418,8 @@ else:
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
                             col_a, col_b = st.columns(2)
-                            last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
+                            
+                            last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0.0
                             col_a.metric("Kilo", f"{last_w} kg")
                             
                             if not future.empty:
