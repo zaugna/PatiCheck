@@ -21,93 +21,108 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: THE "APP EXPERIENCE" (Glassmorphism & Clean Typography) ---
+# --- CSS: HIGH CONTRAST & ACCESSIBILITY ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    /* 1. Global Reset */
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
+    /* 1. Global Reset & Font */
+    * { font-family: 'Inter', sans-serif; }
     
-    /* 2. App Background */
-    .stApp { background-color: #0F1116; }
+    /* 2. Backgrounds */
+    .stApp { background-color: #000000; } /* True Black for OLED/Mobile */
     
-    /* 3. Hide Sidebar & Footer */
-    [data-testid="stSidebar"] { display: none; }
-    #MainMenu { display: none; }
-    footer { display: none; }
+    /* 3. Typography (High Contrast) */
+    h1, h2, h3, h4, h5, h6 { color: #FFFFFF !important; font-weight: 800; letter-spacing: -0.5px; }
+    p, label, span, li, div { color: #EDEDED !important; font-size: 15px; } /* Off-White for readability */
     
-    /* 4. Typography */
-    h1, h2, h3 { color: #FFFFFF !important; font-weight: 800; letter-spacing: -0.5px; }
-    p, label, span { color: #A0A4AB !important; }
-    
-    /* 5. GLASS CARDS */
+    /* 4. CARDS (High Visibility) */
     div.css-card {
-        background-color: #1E212B;
-        border: 1px solid #2E323E;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
+        background-color: #16181C; /* Dark Grey */
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
     }
     
-    /* 6. BUTTONS */
+    /* 5. BUTTONS (Touchable Areas) */
     div.stButton > button {
         width: 100%;
-        border-radius: 12px;
-        height: 45px;
-        background-color: #FF6B6B;
+        border-radius: 10px;
+        height: 48px; /* Taller for mobile touch */
+        background-color: #FF6B6B; /* Brand Red */
         color: white;
         border: none;
-        font-weight: 600;
-        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.2);
-        transition: all 0.2s;
+        font-weight: 700;
+        font-size: 16px;
     }
     div.stButton > button:hover {
         background-color: #FF5252;
-        transform: translateY(-2px);
     }
     button[kind="secondary"] {
         background-color: #2E323E !important;
-        border: 1px solid #444 !important;
+        border: 1px solid #555 !important;
     }
 
-    /* 7. INPUTS */
+    /* 6. INPUTS (Distinct & Readable) */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-        background-color: #15171E !important;
-        color: white !important;
-        border: 1px solid #2E323E !important;
+        background-color: #1F2229 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444 !important;
         border-radius: 10px;
+        font-size: 16px; /* Prevents zoom on iOS */
     }
-    /* Dropdown Popups */
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #1E212B !important; }
-    li[role="option"] { background-color: #1E212B !important; color: white !important; }
-    li[role="option"]:hover { background-color: #FF6B6B !important; color: white !important; }
+    /* Fix the label color above inputs */
+    .stTextInput label, .stNumberInput label, .stDateInput label, .stSelectbox label {
+        color: #FF6B6B !important;
+        font-weight: 600;
+    }
     
-    /* 8. TABS */
+    /* 7. DROPDOWN MENUS */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #1F2229 !important;
+        border: 1px solid #444;
+    }
+    li[role="option"] {
+        color: white !important;
+    }
+    li[role="option"]:hover {
+        background-color: #FF6B6B !important;
+    }
+    
+    /* 8. TABS (Clear Selection) */
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        background-color: #1E212B;
+        height: 45px;
+        background-color: #16181C;
         border-radius: 8px;
-        color: white;
-        border: 1px solid #2E323E;
+        color: #888;
+        border: 1px solid #333;
     }
     .stTabs [aria-selected="true"] {
         background-color: #FF6B6B;
         color: white;
+        font-weight: bold;
     }
     
     /* 9. METRICS */
-    [data-testid="stMetricValue"] { font-size: 24px !important; color: white !important; }
-    [data-testid="stMetricLabel"] { font-size: 13px !important; color: #888 !important; }
+    [data-testid="stMetricValue"] { font-size: 26px !important; color: #FFFFFF !important; font-weight: 700; }
+    [data-testid="stMetricLabel"] { font-size: 14px !important; color: #AAAAAA !important; }
     
-    /* 10. PLOTLY FIX */
+    /* 10. HIDE SIDEBAR & UTILS */
+    [data-testid="stSidebar"] { display: none; }
+    #MainMenu { display: none; }
+    footer { display: none; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
-    
-    /* 11. HIDE HINTS */
     div[data-testid="InputInstructions"] { display: none !important; }
+    
+    /* 11. EXPANDER HEADER (High Contrast) */
+    .streamlit-expanderHeader {
+        background-color: #16181C !important;
+        border: 1px solid #444 !important;
+        color: white !important;
+        font-weight: 600;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -120,13 +135,13 @@ if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
-# --- MODERN DIALOGS (The "App" Feel) ---
+# --- MODERN DIALOGS ---
 @st.dialog("💉 Yeni Aşı Kaydı")
 def add_vaccine_dialog(existing_pets, default_pet=None):
     # Determine Pet Selection
     index = 0
     if default_pet and default_pet in existing_pets:
-        index = existing_pets.index(default_pet) + 1 # +1 because of "New..." option
+        index = existing_pets.index(default_pet) + 1 
     
     options = ["➕ Yeni Pet Ekle..."] + existing_pets
     sel = st.selectbox("Evcil Hayvan", options, index=index)
@@ -145,10 +160,10 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
 
     d1 = st.date_input("Yapılan Tarih")
     
-    # RESTORED FEATURE: Manual Date Logic
-    mode = st.radio("Hesaplama", ["Otomatik (Süre)", "Manuel Tarih"], horizontal=True, label_visibility="collapsed")
+    # Manual Date vs Auto
+    mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
     
-    if mode == "Otomatik (Süre)":
+    if mode == "Otomatik":
         dur = st.pills("Geçerlilik", ["1 Ay", "2 Ay", "3 Ay", "1 Yıl"], default="1 Yıl")
         m = 12 if "Yıl" in dur else int(dur.split()[0])
         d2 = d1 + timedelta(days=m*30)
@@ -188,8 +203,8 @@ def login(email, password):
         st.rerun()
     except Exception as e:
         msg = str(e)
-        if "Email not confirmed" in msg: st.error("Lütfen email onaylayın.")
-        else: st.error("Giriş Hatalı.")
+        if "Email not confirmed" in msg: st.error("Lütfen email adresinizi onaylayın.")
+        else: st.error("Email veya şifre hatalı.")
 
 def logout():
     supabase.auth.sign_out()
@@ -199,17 +214,23 @@ def logout():
 # --- ENTRY POINT ---
 if st.session_state["user"] is None:
     # LANDING PAGE DESIGN
-    st.markdown("<h1 style='text-align: center; color: #FF6B6B !important;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Evcil hayvanlarınızın sağlığı, kontrol altında.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FF6B6B !important; font-size: 3rem;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #EDEDED !important; font-size: 1.2rem;'>Evcil hayvanlarınızın sağlığı, kontrol altında.</p>", unsafe_allow_html=True)
     st.write("")
     
     tab1, tab2 = st.tabs(["Giriş Yap", "Kod ile Gir"])
     
+    # LOGIN FORM - WRAPPED TO ENABLE ENTER KEY
     with tab1:
-        email = st.text_input("Email", key="l_e")
-        password = st.text_input("Şifre", type="password", key="l_p")
-        if st.button("Giriş Yap"): login(email, password)
-        st.markdown("<br><p style='text-align:center; font-size:12px'>Hesabınız yoksa kod ile giriş yapın, otomatik oluşsun.</p>", unsafe_allow_html=True)
+        with st.form("login_form"):
+            email = st.text_input("Email")
+            password = st.text_input("Şifre", type="password")
+            st.write("")
+            submitted = st.form_submit_button("Giriş Yap", type="primary")
+            if submitted:
+                login(email, password)
+        
+        st.markdown("<br><p style='text-align:center; font-size:12px; color:#888 !important;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olabilirsiniz.</p>", unsafe_allow_html=True)
 
     with tab2:
         st.caption("Şifresiz hızlı giriş (veya kayıt)")
@@ -238,13 +259,13 @@ else:
     # --- APP NAVIGATION ---
     selected = option_menu(
         menu_title=None,
-        options=["Ana Sayfa", "Profiller", "Ayarlar"],
-        icons=["house-fill", "grid-fill", "gear-fill"],
+        options=["Ana Sayfa", "Evcil Hayvanlarım", "Ayarlar"], # Renamed here
+        icons=["house-fill", "heart-fill", "gear-fill"],
         default_index=0,
         orientation="horizontal",
         styles={
-            "container": {"padding": "0!important", "background-color": "#1E212B", "border-radius": "12px"},
-            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#A0A4AB"},
+            "container": {"padding": "0!important", "background-color": "#16181C", "border-radius": "12px", "border": "1px solid #333"},
+            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#AAAAAA"},
             "nav-link-selected": {"background-color": "#FF6B6B", "color": "white", "font-weight": "600"},
         }
     )
@@ -275,6 +296,8 @@ else:
             
             st.write("---")
             
+            # --- FIXED URGENT SECTION ---
+            # We fix the NameError by iterating cleanly
             urgent = df[df["next_due_date"] <= (today + timedelta(days=7))].sort_values("next_due_date")
             
             if not urgent.empty:
@@ -282,28 +305,35 @@ else:
                 for _, row in urgent.iterrows():
                     days = (row['next_due_date'] - today).days
                     
-                    bg_color = "rgba(255, 75, 75, 0.1)"
-                    border_color = "#FF4B4B"
-                    msg = f"{abs(days)} GÜN GEÇTİ" if days < 0 else f"{days} GÜN KALDI"
+                    # Logic for color
+                    if days < 0:
+                        card_color = "#FF4B4B" # Red
+                        msg = f"{abs(days)} GÜN GEÇTİ"
+                    elif days <= 3:
+                        card_color = "#FF9F43" # Orange
+                        msg = f"{days} GÜN KALDI"
+                    else:
+                        card_color = "#1DD1A1" # Green/Teal
+                        msg = f"{days} GÜN VAR"
                     
+                    # Safe HTML injection
                     st.markdown(f"""
-                    <div class="css-card" style="border-left: 4px solid {border_color};">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <h3 style="margin:0; font-size:18px; color:white;">{row['pet_name']} - {row['vaccine_type']}</h3>
-                                <p style="margin:0;">{row['next_due_date'].strftime('%d.%m.%Y')}</p>
-                            </div>
-                            <div style="background:{color}; padding:5px 10px; border-radius:15px; color:white; font-weight:bold; font-size:12px;">
-                                {msg}
-                            </div>
+                    <div style="background-color: rgba(30, 30, 30, 0.5); border-left: 5px solid {card_color}; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: white; font-weight: bold; font-size: 16px;">{row['pet_name']}</div>
+                            <div style="color: #CCCCCC; font-size: 14px;">{row['vaccine_type']}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: {card_color}; font-weight: 800; font-size: 13px;">{msg}</div>
+                            <div style="color: #888888; font-size: 12px;">{row['next_due_date'].strftime('%d.%m.%Y')}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
                 st.success("Harika! Önümüzdeki 7 gün içinde acil bir durum yok.")
 
-    # --- VIEW 2: PROFILES ---
-    elif selected == "Profiller":
+    # --- VIEW 2: PETS ---
+    elif selected == "Evcil Hayvanlarım":
         if df.empty:
             st.warning("Profil bulunamadı.")
         else:
@@ -346,8 +376,8 @@ else:
                             column_config={
                                 "id": None, "user_id": None, "created_at": None, "pet_name": None,
                                 "vaccine_type": "Aşı",
-                                "date_applied": st.column_config.DateColumn("Yapıldı", format="DD.MM.YYYY"),
-                                "next_due_date": st.column_config.DateColumn("Bitiş", format="DD.MM.YYYY"),
+                                "date_applied": st.column_config.DateColumn("Yapıldı"),
+                                "next_due_date": st.column_config.DateColumn("Bitiş"),
                                 "weight": st.column_config.NumberColumn("Kg", format="%.1f"),
                                 "notes": "Not"
                             },
@@ -374,8 +404,7 @@ else:
                             fig.add_trace(go.Scatter(
                                 x=p_df["date_applied"], y=p_df["weight"],
                                 mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'),
-                                fill='tozeroy',
-                                hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
+                                fill='tozeroy'
                             ))
                             fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), 
                                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -398,4 +427,4 @@ else:
                 try:
                     supabase.auth.update_user({"password": new_p})
                     st.success("Başarılı!")
-                except Exception as e: st.error(str(e))
+                except Exception as e: st.error(f"Hata: {e}")
