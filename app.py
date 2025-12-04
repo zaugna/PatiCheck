@@ -21,7 +21,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: DESIGN DIRECTOR EDITION ---
+# --- CSS: DESIGN SYSTEM (MOBILE FIXED) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -55,13 +55,12 @@ st.markdown("""
         border: none;
         font-weight: 700;
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
+        transition: transform 0.1s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
         transform: scale(1.01);
     }
-    
-    /* Secondary Button (Grey Outline) */
     button[kind="secondary"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
@@ -74,13 +73,25 @@ st.markdown("""
         background-color: #FFF5F5 !important;
     }
 
-    /* 5. MODAL / DIALOG FIX (Mobile Dark Mode Killer) */
+    /* 5. MODAL / DIALOG FIXES (The "Invisible X" & Black Input Fix) */
     div[role="dialog"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
     }
-    div[role="dialog"] h2, div[role="dialog"] label, div[role="dialog"] p {
+    /* Fix the Close (X) button visibility */
+    div[role="dialog"] button[kind="header"] {
+        color: #1A202C !important; 
+        background-color: transparent !important;
+    }
+    /* Force inputs inside dialog to be white */
+    div[role="dialog"] input, div[role="dialog"] div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
         color: #1A202C !important;
+        border: 1px solid #CBD5E0 !important;
+    }
+    /* Force Date Picker to Light Mode */
+    input[type="date"] {
+        color-scheme: light !important;
     }
 
     /* 6. INPUTS & DROPDOWNS */
@@ -91,7 +102,6 @@ st.markdown("""
         border-radius: 10px;
     }
     
-    /* Dropdown Menu Items */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E2E8F0;
@@ -99,30 +109,21 @@ st.markdown("""
     li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
     li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
     
-    /* 7. TABS (THE "SPACED OUT" DESIGN IS BACK) */
-    /* Container for the tabs - Grey Background */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: #F1F3F5; /* Grey pill container */
-        padding: 5px;
-        border-radius: 12px;
-        border: none;
-    }
-    /* Individual Tabs - Transparent by default */
+    /* 7. TABS */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
-        background-color: transparent;
-        border-radius: 8px;
-        color: #718096;
-        border: none;
-        font-weight: 600;
-        flex-grow: 1; /* Force equal width */
-    }
-    /* Active Tab - White Card style */
-    .stTabs [aria-selected="true"] {
         background-color: #FFFFFF;
-        color: #FF6B6B !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border-radius: 20px;
+        color: #718096;
+        border: 1px solid #E2E8F0;
+        font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FF6B6B;
+        color: white !important;
+        border: none;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
     
     /* 8. EXPANDER HEADER */
@@ -137,7 +138,6 @@ st.markdown("""
         border-color: #FF6B6B !important;
         color: #FF6B6B !important;
     }
-    /* Inner text color force */
     .streamlit-expanderHeader p { color: inherit !important; }
     div[data-testid="stExpander"] { border: none; box-shadow: none; }
     .streamlit-expanderContent {
@@ -151,8 +151,8 @@ st.markdown("""
     }
 
     /* 9. METRICS & UTILS */
-    [data-testid="stMetricValue"] { color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { color: #718096 !important; font-weight: 600; }
+    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
+    [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
     
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
@@ -165,14 +165,15 @@ st.markdown("""
     @media only screen and (max-width: 600px) {
         /* Fix Nav Wrap */
         .nav-link { 
-            font-size: 13px !important; 
-            padding: 5px !important;
-            white-space: nowrap !important; /* Force single line */
+            font-size: 12px !important; 
+            padding: 5px 2px !important;
+            white-space: nowrap !important;
         }
         
         /* Fix Aşı Ekle Button Width */
         div[data-testid="column"] button {
             width: 100% !important;
+            margin-top: 10px !important;
         }
         
         /* Dialog Width on Mobile */
@@ -212,8 +213,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     with c1:
         vac = st.selectbox("Aşı / İşlem", ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
     with c2:
-        # CHANGED: Default value is 0.0 so buttons work immediately
-        w = st.number_input("Kilo (kg)", step=0.1, value=0.0)
+        w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
 
     d1 = st.date_input("Yapılan Tarih")
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
@@ -239,7 +239,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
                     "vaccine_type": vac,
                     "date_applied": str(d1),
                     "next_due_date": str(d2),
-                    "weight": w,
+                    "weight": w if w else 0.0,
                     "notes": notes
                 }
                 supabase.table("vaccinations").insert(data).execute()
@@ -412,7 +412,8 @@ else:
                     if c_head2.button("Aşı Ekle", key=f"btn_{pet}", type="secondary"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
-                    with st.expander("Detayları Göster", expanded=True):
+                    # CHANGE: Expanded=False by default (Closed)
+                    with st.expander("Detayları Göster", expanded=False):
                         t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
                         
                         with t1:
@@ -448,7 +449,7 @@ else:
                                 use_container_width=True,
                                 key=f"editor_{pet}"
                             )
-                            if not edited.equals(edit_df):
+                            if not edited.equals(p_df):
                                 if st.button("Değişiklikleri Kaydet", key=f"save_{pet}", type="primary"):
                                     try:
                                         recs = edited.to_dict('records')
