@@ -21,109 +21,150 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: THE "SAFE & CLEAN" DESIGN SYSTEM ---
+# --- CSS: THE "DIRECTOR'S CUT" DESIGN SYSTEM ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    /* 1. APP BACKGROUND (Soft Light) */
-    .stApp { background-color: #F8F9FB; }
-    
-    /* 2. SAFE TYPOGRAPHY (Does not break Icons) */
-    h1, h2, h3, h4, h5, h6, p, a, button, input, label, li, textarea, span, div {
+    /* 1. TYPOGRAPHY & RESET */
+    html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
+        color: #1A202C;
     }
-    /* Protect Material Icons */
-    i, .material-icons, [data-testid="stExpander"] svg { 
-        font-family: 'Material Icons' !important; 
+    .stApp { background-color: #F8F9FA; }
+    
+    /* Strict Font Sizing */
+    h1 { font-size: 28px !important; font-weight: 800 !important; letter-spacing: -0.5px; color: #111 !important; }
+    h2 { font-size: 22px !important; font-weight: 700 !important; color: #333 !important; }
+    h3 { font-size: 18px !important; font-weight: 600 !important; color: #444 !important; }
+    p, label, li, span, div { font-size: 14px !important; color: #4A5568; }
+    
+    /* 2. THE "BOXED" TABS (Restoring the Segmented Control Look) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px; /* Space between tabs */
+        background-color: transparent;
+        padding: 0px;
+        margin-bottom: 10px;
+        border: none;
     }
-    
-    /* 3. COLORS */
-    h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
-    p, label, li { color: #4A5568 !important; }
-    
-    /* 4. CARDS */
-    div.css-card {
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        border-radius: 8px; /* Boxy look */
+        padding: 0 20px;
+        color: #718096;
+        font-weight: 600;
+        flex-grow: 1; /* Stretch to fill width */
+        text-align: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    
-    /* 5. BUTTONS (Brand Red) */
-    div.stButton > button {
+    .stTabs [aria-selected="true"] {
         background-color: #FF6B6B;
         color: white !important;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    div.stButton > button:hover {
-        background-color: #FA5252;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+        border-color: #FF6B6B;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
     
-    /* Secondary Button (Grey) */
+    /* 3. BUTTONS (Professional & Aligned) */
+    div.stButton > button {
+        border-radius: 10px;
+        height: 42px;
+        font-weight: 600;
+        border: none;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+    /* Primary Action (Red) */
+    button[kind="primary"] {
+        background-color: #FF6B6B !important;
+        color: white !important;
+        box-shadow: 0 2px 5px rgba(255, 107, 107, 0.2);
+    }
+    button[kind="primary"]:hover {
+        background-color: #FA5252 !important;
+        transform: translateY(-1px);
+    }
+    /* Secondary Action (White/Grey) - Used for 'Aşı Ekle' inside cards */
     button[kind="secondary"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
-        border: 1px solid #E2E8F0 !important;
+        border: 1px solid #CBD5E0 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
     }
     button[kind="secondary"]:hover {
         border-color: #FF6B6B !important;
         color: #FF6B6B !important;
+        background-color: #FFF5F5 !important;
+    }
+
+    /* 4. EXPANDER HEADER (High Visibility) */
+    .streamlit-expanderHeader {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        color: #1A202C !important;
+        padding: 12px 16px !important;
+        margin-top: 10px;
+    }
+    /* Highlight when hovering or active */
+    .streamlit-expanderHeader:hover {
+        border-color: #FF6B6B !important;
+        background-color: #FFFAFA !important;
+    }
+    /* Fix text inside header */
+    .streamlit-expanderHeader p { 
+        font-size: 15px !important; 
+        font-weight: 600 !important; 
+        color: #2D3748 !important; 
+    }
+    div[data-testid="stExpander"] { border: none; }
+    
+    /* 5. CARDS & CONTAINERS */
+    /* Clean container for Pet Profile */
+    [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > [data-testid="stVerticalBlock"] {
+        background-color: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        margin-bottom: 24px;
     }
 
     /* 6. INPUTS & DROPDOWNS */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
-        color: #1A202C !important;
+        color: #2D3748 !important;
         border: 1px solid #CBD5E0 !important;
         border-radius: 8px;
     }
     
-    /* Dropdown Menus */
+    /* Dropdown Menu Items */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #FFFFFF !important;
     }
     li[role="option"] {
         color: #2D3748 !important;
+        background-color: #FFFFFF !important;
     }
     li[role="option"]:hover {
         background-color: #FFF5F5 !important;
         color: #FF6B6B !important;
     }
 
-    /* 7. METRICS (High Contrast) */
-    [data-testid="stMetricValue"] { color: #1A202C !important; font-weight: 700; }
-    [data-testid="stMetricLabel"] { color: #718096 !important; }
-
-    /* 8. EXPANDER (Clean & Visible) */
-    .streamlit-expanderHeader {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        color: #2D3748;
-    }
-    /* Force text inside expander to be visible */
-    .streamlit-expanderHeader p { 
-        color: #2D3748 !important; 
-        font-weight: 600; 
-        font-size: 15px; 
-    }
-    div[data-testid="stExpander"] { border: none; }
-
+    /* 7. METRICS */
+    [data-testid="stMetricValue"] { font-size: 24px !important; color: #1A202C !important; font-weight: 700; }
+    [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* 8. PLOTLY CLEANUP */
+    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
+    
     /* 9. UTILS */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
     div[data-testid="InputInstructions"] { display: none !important; }
-    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
-    [data-testid="stDataFrame"] { background-color: white; border: 1px solid #E2E8F0; }
+    [data-testid="stDataFrame"] { border: 1px solid #E2E8F0; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -136,10 +177,9 @@ if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
-# --- DIALOGS (MODERN INPUT) ---
+# --- DIALOGS ---
 @st.dialog("💉 Yeni Aşı Kaydı")
 def add_vaccine_dialog(existing_pets, default_pet=None):
-    # Smart Pre-selection
     index = 0
     if default_pet and default_pet in existing_pets:
         index = existing_pets.index(default_pet) + 1 
@@ -160,8 +200,6 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
 
     d1 = st.date_input("Yapılan Tarih")
-    
-    # RESTORED: Manual vs Auto Date
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
     
     if mode == "Otomatik":
@@ -211,33 +249,34 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --- ENTRY POINT ---
+# --- ENTRY ---
 if st.session_state["user"] is None:
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #718096 !important; font-size: 1.2rem; margin-top: -10px;'>Akıllı, güvenli ve modern evcil hayvan takibi.</p>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1A202C !important; font-size: 42px !important;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 16px !important;'>Evcil hayvanlarınızın sağlığı, kontrol altında.</p>", unsafe_allow_html=True)
     st.write("")
     
-    with st.container():
-        st.markdown('<div class="css-card">', unsafe_allow_html=True)
+    c_login = st.container()
+    with c_login:
+        # Applying a card style wrapper manually via markdown div is tricky in Streamlit 
+        # so we rely on the clean input styles defined in CSS.
         tab1, tab2 = st.tabs(["Giriş Yap", "Kod ile Gir"])
         
         with tab1:
             with st.form("login_form"):
-                st.markdown("### Hoşgeldiniz")
                 email = st.text_input("Email")
                 password = st.text_input("Şifre", type="password")
                 st.write("")
                 if st.form_submit_button("Giriş Yap", type="primary"):
                     login(email, password)
-            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; font-size:12px !important; color:#888 !important; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
 
         with tab2:
-            st.markdown("### Hızlı Giriş")
+            st.caption("Şifresiz hızlı giriş (veya kayıt)")
             otp_e = st.text_input("Email", key="otp_e")
             
             if not st.session_state["otp_sent"]:
-                if st.button("Kod Gönder"):
+                if st.button("Kod Gönder", type="primary"):
                     try:
                         supabase.auth.sign_in_with_otp({"email": otp_e})
                         st.session_state["otp_sent"] = True
@@ -247,17 +286,16 @@ if st.session_state["user"] is None:
             else:
                 st.success(f"Kod gönderildi: {st.session_state['otp_email_cache']}")
                 code = st.text_input("6 Haneli Kod")
-                if st.button("Doğrula"):
+                if st.button("Doğrula", type="primary"):
                     try:
                         res = supabase.auth.verify_otp({"email": st.session_state["otp_email_cache"], "token": code, "type": "magiclink"})
                         st.session_state["user"] = res.user
                         st.session_state["otp_sent"] = False
                         st.rerun()
                     except: st.error("Hatalı Kod")
-        st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- NAVIGATION ---
+    # --- NAVIGATION (Bold & Visible) ---
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Evcil Hayvanlarım", "Ayarlar"],
@@ -265,9 +303,12 @@ else:
         default_index=0,
         orientation="horizontal",
         styles={
-            "container": {"padding": "0!important", "background-color": "#FFFFFF", "border-radius": "12px", "border": "1px solid #E2E8F0", "box-shadow": "0 2px 4px rgba(0,0,0,0.02)"},
-            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#718096"},
-            "nav-link-selected": {"background-color": "#FF6B6B", "color": "white", "font-weight": "600"},
+            # Container border and shadow
+            "container": {"padding": "0!important", "background-color": "#FFFFFF", "border-radius": "12px", "border": "1px solid #E2E8F0", "box-shadow": "0 2px 8px rgba(0,0,0,0.03)"},
+            # Nav items: Bold and Darker color
+            "nav-link": {"font-size": "15px", "text-align": "center", "margin": "0px", "color": "#4A5568", "font-weight": "600"},
+            # Selected item: Brand Red
+            "nav-link-selected": {"background-color": "#FF6B6B", "color": "white", "font-weight": "700"},
         }
     )
 
@@ -276,13 +317,15 @@ else:
 
     # --- HOME ---
     if selected == "Ana Sayfa":
-        c1, c2 = st.columns([2.5, 1.2])
-        c1.subheader(f"👋 Merhaba")
-        
-        # Primary Action Button
-        if c2.button("➕ Pet / Aşı Ekle", type="primary"):
-            existing = list(df["pet_name"].unique()) if not df.empty else []
-            add_vaccine_dialog(existing)
+        # Header Alignment
+        c1, c2 = st.columns([3, 1.2])
+        with c1:
+            st.subheader("👋 Merhaba")
+        with c2:
+            # Primary Action Button - Aligned to header
+            if st.button("➕ Pet / Aşı Ekle", type="primary", use_container_width=True):
+                existing = list(df["pet_name"].unique()) if not df.empty else []
+                add_vaccine_dialog(existing)
 
         if df.empty:
             st.info("Hoşgeldiniz! Henüz bir kayıt yok.")
@@ -290,7 +333,6 @@ else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             today = date.today()
             
-            # DASHBOARD STATS
             k1, k2, k3 = st.columns(3)
             def styled_metric(label, value, color="#1A202C"):
                 st.markdown(f"""
@@ -309,7 +351,6 @@ else:
             st.write("")
             st.write("")
             
-            # URGENT LIST
             urgent = df[df["next_due_date"] <= (today + timedelta(days=7))].sort_values("next_due_date")
             
             if not urgent.empty:
@@ -317,13 +358,13 @@ else:
                 for _, row in urgent.iterrows():
                     days = (row['next_due_date'] - today).days
                     if days < 0:
-                        colors = ("#FFF5F5", "#C53030") # Red
+                        colors = ("#FFF5F5", "#C53030")
                         msg = f"{abs(days)} GÜN GEÇTİ"
                     elif days <= 3:
-                        colors = ("#FFFAF0", "#C05621") # Orange
+                        colors = ("#FFFAF0", "#C05621")
                         msg = f"{days} GÜN KALDI"
                     else:
-                        colors = ("#F0FFF4", "#2F855A") # Green
+                        colors = ("#F0FFF4", "#2F855A")
                         msg = f"{days} GÜN VAR"
                     
                     st.markdown(f"""
@@ -353,89 +394,92 @@ else:
             for pet in pets:
                 p_df = df[df["pet_name"] == pet].sort_values("date_applied")
                 
-                with st.container():
-                    c_head1, c_head2 = st.columns([2.5, 1.2])
-                    c_head1.subheader(f"🐾 {pet}")
-                    # Smart Redirect Button
-                    if c_head2.button("Aşı Ekle", key=f"btn_{pet}", type="secondary"):
+                # --- PET CARD LAYOUT ---
+                # We use 'st.container' but styled with CSS to look like a card
+                
+                # Pet Header Row
+                c_head1, c_head2 = st.columns([3, 1.2]) # Adjusted ratio
+                with c_head1:
+                    st.subheader(f"🐾 {pet}")
+                with c_head2:
+                    # Stylish Secondary Button
+                    if st.button("➕ Aşı Ekle", key=f"btn_{pet}", type="secondary", use_container_width=True):
                         add_vaccine_dialog(list(pets), default_pet=pet)
+                
+                # The Expander
+                with st.expander("Detayları Göster", expanded=True):
+                    # TABS (Styled as Segmented Control)
+                    t1, t2, t3 = st.tabs(["Genel Bakış", "Geçmiş Kayıtlar", "Kilo Grafiği"])
                     
-                    with st.expander("Detayları Göster", expanded=True):
-                        # TABS - Standard Streamlit Tabs (Styled by CSS)
-                        t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Kilo Grafiği"])
+                    with t1:
+                        future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
+                        col_a, col_b = st.columns(2)
                         
-                        with t1:
-                            future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
-                            col_a, col_b = st.columns(2)
+                        last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
+                        col_a.metric("Güncel Kilo", f"{last_w} kg")
+                        
+                        if not future.empty:
+                            nxt = future.iloc[0]
+                            col_b.metric("Sıradaki", nxt['vaccine_type'], nxt['next_due_date'].strftime('%d.%m'))
+                        else:
+                            col_b.metric("Sıradaki", "-")
                             
-                            last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
-                            col_a.metric("Kilo", f"{last_w} kg")
-                            
-                            if not future.empty:
-                                nxt = future.iloc[0]
-                                col_b.metric("Sıradaki", nxt['vaccine_type'], nxt['next_due_date'].strftime('%d.%m'))
-                            else:
-                                col_b.metric("Sıradaki", "-")
-                                
-                            valid_notes = [n for n in p_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
-                            if valid_notes:
-                                st.info(f"📝 {valid_notes[-1]}")
+                        valid_notes = [n for n in p_df["notes"].unique() if n and str(n).strip() != "None" and str(n).strip() != ""]
+                        if valid_notes:
+                            st.info(f"📝 {valid_notes[-1]}")
 
-                        with t2:
-                            edit_df = p_df.copy()
-                            edited = st.data_editor(
-                                edit_df,
-                                column_config={
-                                    "id": None, "user_id": None, "created_at": None, "pet_name": None,
-                                    "vaccine_type": "Aşı",
-                                    "date_applied": st.column_config.DateColumn("Yapıldı", format="DD.MM.YYYY"),
-                                    "next_due_date": st.column_config.DateColumn("Bitiş", format="DD.MM.YYYY"),
-                                    "weight": st.column_config.NumberColumn("Kg", format="%.1f"),
-                                    "notes": "Not"
-                                },
-                                hide_index=True,
-                                use_container_width=True,
-                                key=f"editor_{pet}"
+                    with t2:
+                        edit_df = p_df.copy()
+                        # Convert to datetime for editor
+                        edit_df["date_applied"] = pd.to_datetime(edit_df["date_applied"])
+                        
+                        edited = st.data_editor(
+                            edit_df,
+                            column_config={
+                                "id": None, "user_id": None, "created_at": None, "pet_name": None,
+                                "vaccine_type": "Aşı",
+                                "date_applied": st.column_config.DateColumn("Yapıldı", format="DD.MM.YYYY"),
+                                "next_due_date": st.column_config.DateColumn("Bitiş", format="DD.MM.YYYY"),
+                                "weight": st.column_config.NumberColumn("Kg", format="%.1f"),
+                                "notes": "Not"
+                            },
+                            hide_index=True,
+                            use_container_width=True,
+                            key=f"editor_{pet}"
+                        )
+                        if not edited.equals(edit_df):
+                            if st.button("Değişiklikleri Kaydet", key=f"save_{pet}", type="primary"):
+                                try:
+                                    recs = edited.to_dict('records')
+                                    for r in recs:
+                                        r['date_applied'] = str(r['date_applied'])
+                                        r['next_due_date'] = str(r['next_due_date'])
+                                    supabase.table("vaccinations").upsert(recs).execute()
+                                    st.success("Güncellendi!")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                except: st.error("Hata")
+
+                    with t3:
+                        if len(p_df) > 0:
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=p_df["date_applied"], y=p_df["weight"],
+                                mode='lines+markers', 
+                                line=dict(color='#FF6B6B', width=3, shape='spline'),
+                                marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)),
+                                fill='tozeroy', 
+                                fillcolor='rgba(255, 107, 107, 0.1)',
+                                name='Kilo'
+                            ))
+                            fig.update_layout(
+                                height=250, margin=dict(t=10,b=0,l=0,r=0), 
+                                paper_bgcolor='rgba(0,0,0,0)', 
+                                plot_bgcolor='rgba(0,0,0,0)',
+                                xaxis=dict(showgrid=False, showline=False, color="#718096"),
+                                yaxis=dict(showgrid=True, gridcolor='#E2E8F0', color="#718096")
                             )
-                            if not edited.equals(p_df):
-                                if st.button("Değişiklikleri Kaydet", key=f"save_{pet}"):
-                                    try:
-                                        recs = edited.to_dict('records')
-                                        for r in recs:
-                                            r['date_applied'] = str(r['date_applied'])
-                                            r['next_due_date'] = str(r['next_due_date'])
-                                        supabase.table("vaccinations").upsert(recs).execute()
-                                        st.success("Güncellendi!")
-                                        time.sleep(0.5)
-                                        st.rerun()
-                                    except: st.error("Hata")
-
-                        with t3:
-                            if len(p_df) > 0:
-                                fig = go.Figure()
-                                fig.add_trace(go.Scatter(
-                                    x=p_df["date_applied"], y=p_df["weight"],
-                                    mode='lines+markers', 
-                                    line=dict(color='#FF6B6B', width=3, shape='spline'),
-                                    marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)),
-                                    fill='tozeroy', 
-                                    fillcolor='rgba(255, 107, 107, 0.1)',
-                                    name='Kilo',
-                                    hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
-                                ))
-                                # Ref Line for single point
-                                if len(p_df) == 1:
-                                    val = p_df["weight"].iloc[0]
-                                    fig.add_hline(y=val, line_dash="dot", line_color="#CBD5E0")
-
-                                fig.update_layout(
-                                    height=250, margin=dict(t=10,b=0,l=0,r=0), 
-                                    paper_bgcolor='rgba(0,0,0,0)', 
-                                    plot_bgcolor='rgba(0,0,0,0)',
-                                    xaxis=dict(showgrid=False, showline=False, color="#718096"),
-                                    yaxis=dict(showgrid=True, gridcolor='#E2E8F0', color="#718096")
-                                )
-                                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                 st.write("---")
 
     # --- SETTINGS ---
@@ -448,7 +492,7 @@ else:
         st.write("---")
         with st.expander("Şifre Değiştir"):
             new_p = st.text_input("Yeni Şifre", type="password")
-            if st.button("Güncelle"):
+            if st.button("Güncelle", type="primary"):
                 try:
                     supabase.auth.update_user({"password": new_p})
                     st.success("Başarılı!")
