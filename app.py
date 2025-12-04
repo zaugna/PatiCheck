@@ -21,7 +21,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: THE "NO-REGRESSION" DESIGN SYSTEM ---
+# --- CSS: THE "PURE LIGHT" DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -37,11 +37,23 @@ st.markdown("""
     }
     .stApp { background-color: #F8F9FA !important; }
     
-    /* 2. TYPOGRAPHY */
+    /* 2. FORCE NATIVE INPUTS TO LIGHT MODE (Fixes Calendar) */
+    input[type="date"], input[type="text"], input[type="number"] {
+        color-scheme: light !important;
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    /* Fix Calendar Icon Visibility */
+    ::-webkit-calendar-picker-indicator {
+        filter: invert(0) !important;
+    }
+    
+    /* 3. TYPOGRAPHY */
     h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
     p, label, span, li, div { color: #4A5568 !important; }
     
-    /* 3. CARDS */
+    /* 4. CARDS */
     div.css-card {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -51,7 +63,7 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     
-    /* 4. BUTTONS */
+    /* 5. BUTTONS */
     div.stButton > button {
         width: 100%;
         border-radius: 12px;
@@ -67,7 +79,6 @@ st.markdown("""
         background-color: #FA5252;
         transform: scale(1.01);
     }
-    /* Secondary Button */
     button[kind="secondary"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
@@ -80,54 +91,43 @@ st.markdown("""
         background-color: #FFF5F5 !important;
     }
 
-    /* 5. MODAL / DIALOG FIXES */
+    /* 6. DIALOG / MODAL FIXES (The "Dark Mode Remnants" Killer) */
     div[role="dialog"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
     }
+    /* Force Close Button (X) to be Black */
     button[aria-label="Close"] {
         color: #1A202C !important;
         background-color: transparent !important;
         border: none !important;
     }
-    
-    /* 6. INPUTS & PILLS (FIXED) */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+    /* Force Selectbox Inner Container to White */
+    div[data-baseweb="select"] > div {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 10px;
+        border-color: #E2E8F0 !important;
     }
     
-    /* FIX: Password Input Specific Target */
-    input[type="password"] {
-        background-color: #FFFFFF !important;
-        color: #1A202C !important;
-        -webkit-text-fill-color: #1A202C !important;
-    }
-
-    /* FIX: Pills (Geçerlilik Buttons) */
+    /* 7. PILLS (Geçerlilik Buttons) FIX */
+    /* Unselected State: Light Grey bg, Dark Text */
     div[data-baseweb="tag"] {
         background-color: #F1F3F5 !important;
         border: 1px solid #E2E8F0 !important;
-        cursor: pointer;
     }
-    /* Force text inside unselected pills to be dark */
-    div[data-baseweb="tag"] span, div[data-baseweb="tag"] div {
+    div[data-baseweb="tag"] span {
         color: #4A5568 !important;
     }
-    /* Selected Pill State */
+    /* Selected State: Red bg, White Text */
     div[data-baseweb="tag"][aria-selected="true"] {
         background-color: #FF6B6B !important;
         border-color: #FF6B6B !important;
     }
-    /* Force text inside selected pill to be white */
-    div[data-baseweb="tag"][aria-selected="true"] span, 
-    div[data-baseweb="tag"][aria-selected="true"] div {
+    div[data-baseweb="tag"][aria-selected="true"] span {
         color: #FFFFFF !important;
     }
 
-    /* 7. DROPDOWNS */
+    /* 8. DROPDOWN MENUS */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E2E8F0;
@@ -141,7 +141,7 @@ st.markdown("""
         color: #FF6B6B !important;
     }
 
-    /* 8. TABS (Segmented Control) */
+    /* 9. TABS (Segmented Control) */
     .stTabs [data-baseweb="tab-list"] { 
         gap: 8px; 
         border-bottom: none; 
@@ -164,7 +164,7 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
     
-    /* 9. EXPANDER HEADER */
+    /* 10. EXPANDER HEADER */
     .streamlit-expanderHeader {
         background-color: #FFFFFF !important;
         border: 2px solid #E2E8F0 !important;
@@ -188,7 +188,7 @@ st.markdown("""
         margin-top: -8px;
     }
 
-    /* 10. METRICS & UTILS */
+    /* 11. METRICS & UTILS */
     [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
     [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
     
@@ -199,7 +199,7 @@ st.markdown("""
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* 11. MOBILE SPECIFIC TWEAKS */
+    /* 12. MOBILE SPECIFIC TWEAKS */
     @media only screen and (max-width: 600px) {
         .nav-link { 
             font-size: 12px !important; 
@@ -246,7 +246,6 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     with c1:
         vac = st.selectbox("Aşı / İşlem", ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
     with c2:
-        # Default 0.0 allows +/- buttons to work instantly
         w = st.number_input("Kilo (kg)", step=0.1, value=0.0)
 
     d1 = st.date_input("Yapılan Tarih")
