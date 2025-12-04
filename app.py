@@ -21,32 +21,23 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: MOBILE-FIRST & SYSTEM OVERRIDE ---
+# --- CSS: RESPONSIVE DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. UNIVERSAL LIGHT MODE ENFORCEMENT */
-    /* Overrides System Dark Mode settings on iOS/Android */
-    :root {
-        color-scheme: light !important;
-    }
-    [data-testid="stAppViewContainer"], .stApp {
-        background-color: #F8F9FA !important;
-        color: #1A202C !important;
-    }
-    [data-testid="stHeader"] {
-        background-color: #F8F9FA !important;
-    }
+    /* 1. UNIVERSAL RESET & LIGHT MODE FORCE */
+    :root { color-scheme: light !important; }
+    * { font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #F8F9FA !important; color: #1A202C !important; }
     
     /* 2. TYPOGRAPHY */
-    * { font-family: 'Inter', sans-serif; }
-    h1, h2, h3 { color: #1A202C !important; font-weight: 800 !important; letter-spacing: -0.5px; }
+    h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
     p, label, span, li, div { color: #4A5568 !important; }
     
-    /* 3. CARDS (Mobile Friendly) */
+    /* 3. CARDS */
     div.css-card {
-        background-color: #FFFFFF !important;
+        background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-radius: 16px;
         padding: 20px;
@@ -54,22 +45,29 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     
-    /* 4. BUTTONS */
+    /* 4. BUTTONS (Primary) */
     div.stButton > button {
         width: 100%;
         border-radius: 12px;
         height: 48px;
-        background-color: #FF6B6B !important;
+        background-color: #FF6B6B;
         color: white !important;
         border: none;
         font-weight: 700;
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
+        transition: transform 0.1s;
     }
     div.stButton > button:hover {
-        background-color: #FA5252 !important;
-        transform: translateY(-1px);
+        background-color: #FA5252;
+        transform: scale(1.01);
+        color: white !important;
     }
-    /* Secondary Button (Outline) */
+    div.stButton > button:active {
+        color: white !important;
+        background-color: #FA5252 !important;
+    }
+    
+    /* Secondary Button (Grey Outline) */
     button[kind="secondary"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
@@ -82,7 +80,32 @@ st.markdown("""
         background-color: #FFF5F5 !important;
     }
 
-    /* 5. INPUTS & DROPDOWNS (Force Light) */
+    /* 5. EXPANDER FIX (The Black Bar Killer) */
+    /* We force White background on ALL states (Hover, Focus, Active, Open) */
+    .streamlit-expanderHeader, 
+    .streamlit-expanderHeader:hover, 
+    .streamlit-expanderHeader:focus, 
+    .streamlit-expanderHeader:active,
+    details[open] > summary {
+        background-color: #FFFFFF !important;
+        border: 2px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        color: #1A202C !important;
+        opacity: 1 !important;
+    }
+    .streamlit-expanderHeader p { color: #1A202C !important; font-weight: 600; font-size: 15px; }
+    div[data-testid="stExpander"] { border: none; box-shadow: none; background-color: transparent !important; }
+    .streamlit-expanderContent {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-top: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 20px;
+        margin-top: -8px; /* Connects smoothly to header */
+    }
+
+    /* 6. INPUTS & DROPDOWNS */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
@@ -94,71 +117,55 @@ st.markdown("""
         background-color: #FFFFFF !important;
         border: 1px solid #E2E8F0;
     }
-    li[role="option"] {
-        color: #2D3748 !important;
-        background-color: #FFFFFF !important;
-    }
-    li[role="option"]:hover {
-        background-color: #FFF5F5 !important;
-        color: #FF6B6B !important;
-    }
-
-    /* 6. EXPANDER HEADER (The Black Bar Fix) */
-    .streamlit-expanderHeader {
-        background-color: #FFFFFF !important; /* Force White */
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 12px;
-        color: #1A202C !important; /* Force Dark Text */
-        font-weight: 600 !important;
-    }
-    .streamlit-expanderHeader:hover {
-        border-color: #FF6B6B !important;
-        color: #FF6B6B !important;
-    }
-    /* Specifically target the text inside to ensure it isn't white */
-    .streamlit-expanderHeader p, .streamlit-expanderHeader span {
-        color: #1A202C !important;
-    }
-    div[data-testid="stExpander"] { border: none; box-shadow: none; }
+    li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
+    li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
     
-    /* 7. TABS (Mobile Resilient) */
-    .stTabs [data-baseweb="tab-list"] { 
-        gap: 8px; 
-        border-bottom: none;
-        flex-wrap: wrap; /* Allow wrapping on tiny screens */
-    }
+    /* 7. TABS (Segmented Control) */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
-        background-color: #FFFFFF !important;
+        background-color: #FFFFFF;
         border-radius: 20px;
-        color: #718096 !important;
+        color: #718096;
         border: 1px solid #E2E8F0;
         font-weight: 600;
-        flex: 1 1 auto; /* Grow to fill space */
     }
     .stTabs [aria-selected="true"] {
-        background-color: #FF6B6B !important;
+        background-color: #FF6B6B;
         color: white !important;
         border: none;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
-
-    /* 8. METRICS & UTILS */
-    [data-testid="stMetricValue"] { color: #1A202C !important; }
-    [data-testid="stMetricLabel"] { color: #718096 !important; }
     
+    /* 8. METRICS */
+    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
+    [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
+    
+    /* 9. UTILS */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
     div[data-testid="InputInstructions"] { display: none !important; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
-    [data-testid="stDataFrame"] { background-color: white !important; }
-    
-    /* 9. MOBILE SPECIFIC TWEAKS */
+    [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
+
+    /* --- 10. MOBILE SPECIFIC OVERRIDES --- */
     @media only screen and (max-width: 600px) {
+        /* Fix the "Aşı Ekle" button alignment on mobile */
+        div[data-testid="column"] button {
+            width: 100% !important;
+            margin-top: 10px !important;
+        }
+        
+        /* Adjust Font Sizes for small screens */
         h1 { font-size: 28px !important; }
-        .stButton button { height: 50px !important; }
-        /* Make metrics smaller on mobile to fit */
-        [data-testid="stMetricValue"] { font-size: 20px !important; }
+        h2 { font-size: 22px !important; }
+        h3 { font-size: 18px !important; }
+        
+        /* Navigation Bar Padding */
+        iframe[title="streamlit_option_menu.option_menu"] {
+            margin-bottom: 10px !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -228,7 +235,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# --- AUTH LOGIC ---
+# --- AUTH ---
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -244,7 +251,7 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --- ENTRY POINT ---
+# --- ENTRY ---
 if st.session_state["user"] is None:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
@@ -263,7 +270,7 @@ if st.session_state["user"] is None:
                 st.write("")
                 if st.form_submit_button("Giriş Yap", type="primary"):
                     login(email, password)
-            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden otomatik oluşturun.</p>", unsafe_allow_html=True)
 
         with tab2:
             st.markdown("### Hızlı Giriş")
@@ -293,7 +300,7 @@ else:
     # --- NAVIGATION ---
     selected = option_menu(
         menu_title=None,
-        options=["Ana Sayfa", "Evcil Hayvanlarım", "Ayarlar"],
+        options=["Ana Sayfa", "Profiller", "Ayarlar"], # Renamed for Mobile fit
         icons=["house-fill", "heart-fill", "gear-fill"],
         default_index=0,
         orientation="horizontal",
@@ -372,8 +379,8 @@ else:
             else:
                 st.success("Harika! Önümüzdeki 7 gün içinde acil bir durum yok.")
 
-    # --- PETS ---
-    elif selected == "Evcil Hayvanlarım":
+    # --- PROFILES ---
+    elif selected == "Profiller":
         if df.empty:
             st.warning("Profil bulunamadı.")
         else:
@@ -387,17 +394,16 @@ else:
                 with st.container():
                     c_head1, c_head2 = st.columns([2.5, 1.2])
                     c_head1.subheader(f"🐾 {pet}")
-                    # Secondary Styled Button for Add Vaccine inside Card
+                    # Styled Secondary Button
                     if c_head2.button("Aşı Ekle", key=f"btn_{pet}", type="secondary"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
                     with st.expander("Detayları Göster", expanded=True):
-                        t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Kilo Grafiği"])
+                        t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
                         
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
                             col_a, col_b = st.columns(2)
-                            
                             last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
                             col_a.metric("Kilo", f"{last_w} kg")
                             
@@ -412,11 +418,7 @@ else:
                                 st.info(f"📝 {valid_notes[-1]}")
 
                         with t2:
-                            # CRITICAL FIX: Convert Date Columns BEFORE Displaying/Editing
                             edit_df = p_df.copy()
-                            edit_df["date_applied"] = pd.to_datetime(edit_df["date_applied"]).dt.date
-                            edit_df["next_due_date"] = pd.to_datetime(edit_df["next_due_date"]).dt.date
-                            
                             edited = st.data_editor(
                                 edit_df,
                                 column_config={
@@ -432,7 +434,7 @@ else:
                                 key=f"editor_{pet}"
                             )
                             if not edited.equals(edit_df):
-                                if st.button("Değişiklikleri Kaydet", key=f"save_{pet}"):
+                                if st.button("Değişiklikleri Kaydet", key=f"save_{pet}", type="primary"):
                                     try:
                                         recs = edited.to_dict('records')
                                         for r in recs:
@@ -476,7 +478,7 @@ else:
         st.write("---")
         with st.expander("Şifre Değiştir"):
             new_p = st.text_input("Yeni Şifre", type="password")
-            if st.button("Güncelle"):
+            if st.button("Güncelle", type="primary"):
                 try:
                     supabase.auth.update_user({"password": new_p})
                     st.success("Başarılı!")
