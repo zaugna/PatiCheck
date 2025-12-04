@@ -21,32 +21,30 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: THE "AIRY LIGHT" THEME ---
+# --- CSS: THE "LIVELY & READABLE" DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. Global Reset */
+    /* 1. Reset */
     * { font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #F8F9FB; }
     
-    /* 2. Background */
-    .stApp { background-color: #F8F9FB; } /* Ultra-soft blue-grey */
-    
-    /* 3. Typography */
+    /* 2. Typography - High Contrast */
     h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
-    p, label, span, li, div { color: #4A5568 !important; }
+    p, label, span, li, div { color: #2D3748 !important; } /* Darker Grey for readability */
     
-    /* 4. CARDS (More Breathing Room) */
+    /* 3. Cards */
     div.css-card {
         background-color: #FFFFFF;
-        border: 1px solid #EEF2F6;
-        border-radius: 20px; /* Softer corners */
-        padding: 24px; /* More space */
-        margin-bottom: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
     
-    /* 5. BUTTONS (Primary) */
+    /* 4. Primary Buttons */
     div.stButton > button {
         width: 100%;
         border-radius: 12px;
@@ -54,88 +52,98 @@ st.markdown("""
         background-color: #FF6B6B;
         color: white !important;
         border: none;
-        font-weight: 600;
-        box-shadow: 0 4px 10px rgba(255, 107, 107, 0.2);
-        transition: transform 0.2s;
+        font-weight: 700;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
+        transition: transform 0.1s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
-        transform: translateY(-2px);
-    }
-    
-    /* 6. "ISLEM EKLE" BUTTON (Secondary but Visible) */
-    /* We target specific keys or rely on 'kind=secondary' logic */
-    button[kind="secondary"] {
-        background-color: #FFF0F0 !important; /* Very faint red bg */
-        color: #FF6B6B !important;
-        border: 1px solid #FF6B6B !important;
-        font-weight: 600 !important;
-    }
-    button[kind="secondary"]:hover {
-        background-color: #FF6B6B !important;
+        transform: scale(1.01);
         color: white !important;
     }
+    
+    /* 5. Secondary Buttons (Grey) */
+    button[kind="secondary"] {
+        background-color: #EDF2F7 !important;
+        color: #2D3748 !important;
+        border: 1px solid #CBD5E0 !important;
+        box-shadow: none !important;
+    }
 
-    /* 7. TABS (The "Segmented Control" Look) */
+    /* 6. Inputs */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important; /* Almost Black text */
+        border: 2px solid #E2E8F0 !important;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+    
+    /* 7. Dropdown Menus (High Visibility) */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    li[role="option"] { color: #2D3748 !important; font-weight: 500; }
+    li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
+    
+    /* 8. TABS (Lively Design) */
     .stTabs [data-baseweb="tab-list"] { 
-        gap: 10px; 
-        background-color: #F1F3F5; 
-        padding: 5px; 
-        border-radius: 12px; 
+        gap: 8px; 
+        border-bottom: none;
+        padding-bottom: 10px;
     }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
-        background-color: transparent;
-        border-radius: 8px;
-        color: #718096;
-        border: none;
+        background-color: #FFFFFF;
+        border-radius: 20px; /* Pill shape */
+        color: #4A5568;
+        border: 1px solid #E2E8F0;
         font-weight: 600;
-        flex-grow: 1; /* Stretch to fill */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .stTabs [aria-selected="true"] {
-        background-color: #FFFFFF;
-        color: #FF6B6B !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        background-color: #FF6B6B;
+        color: white !important;
+        border: none;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
     
-    /* 8. EXPANDER HEADER (High Visibility) */
+    /* 9. METRICS */
+    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
+    [data-testid="stMetricLabel"] { font-size: 13px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
+    
+    /* 10. EXPANDER HEADER (Highlight: Soft Red Background) */
     .streamlit-expanderHeader {
-        background-color: #FFFFFF !important;
-        border: 2px solid #F1F3F5;
+        background-color: #FFF5F5 !important; /* Very faint red */
+        border: 1px solid #FF6B6B !important; /* Red Border */
         border-radius: 12px;
-        color: #2D3748 !important;
-        padding: 15px !important;
+        color: #D63031 !important; /* Dark Red Text */
+        font-weight: 700 !important;
     }
     .streamlit-expanderHeader:hover {
-        border-color: #FF6B6B;
-        color: #FF6B6B !important;
+        background-color: #FFE3E3 !important;
     }
-    .streamlit-expanderHeader p { 
-        font-size: 15px; font-weight: 600; 
-    }
+    .streamlit-expanderHeader p { color: #D63031 !important; font-size: 15px; }
     div[data-testid="stExpander"] { border: none; }
-    
-    /* 9. INPUTS */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] {
-        background-color: #FFFFFF !important;
-        color: #2D3748 !important;
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 10px;
+    .streamlit-expanderContent {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-top: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 20px;
+        margin-top: -5px; /* Connect to header */
     }
-    
-    /* 10. METRICS */
-    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { font-size: 13px !important; color: #718096 !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    /* 11. PLOTLY & UTILS */
-    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
-    div[data-testid="InputInstructions"] { display: none !important; }
-    [data-testid="stDataFrame"] { background-color: white; border: 1px solid #E2E8F0; }
-    
-    /* Hide Sidebar/Footer */
+
+    /* 11. UTILS */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
+    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
+    div[data-testid="InputInstructions"] { display: none !important; }
+    [data-testid="stDataFrame"] { background-color: white; border: 1px solid #E2E8F0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -266,6 +274,7 @@ if st.session_state["user"] is None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
+    # --- NAVIGATION ---
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Evcil Hayvanlarım", "Ayarlar"],
@@ -274,7 +283,7 @@ else:
         orientation="horizontal",
         styles={
             "container": {"padding": "0!important", "background-color": "#FFFFFF", "border-radius": "12px", "border": "1px solid #E2E8F0", "box-shadow": "0 2px 4px rgba(0,0,0,0.02)"},
-            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#718096"},
+            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#2D3748", "font-weight": "500"},
             "nav-link-selected": {"background-color": "#FF6B6B", "color": "white", "font-weight": "600"},
         }
     )
@@ -284,9 +293,9 @@ else:
 
     # --- HOME ---
     if selected == "Ana Sayfa":
-        c1, c2 = st.columns([3, 1])
+        c1, c2 = st.columns([2.5, 1.2]) # Adjusted ratio for button spacing
         c1.subheader(f"👋 Merhaba")
-        if c2.button("➕ Ekle", type="primary"):
+        if c2.button("➕ Pet / Aşı Ekle", type="primary"):
             existing = list(df["pet_name"].unique()) if not df.empty else []
             add_vaccine_dialog(existing)
 
@@ -299,9 +308,9 @@ else:
             k1, k2, k3 = st.columns(3)
             def styled_metric(label, value, color="#1A202C"):
                 st.markdown(f"""
-                <div style="background:white; padding:15px; border-radius:12px; border:1px solid #E2E8F0; text-align:center;">
-                    <div style="color:#718096; font-size:13px; font-weight:600; margin-bottom:5px;">{label}</div>
-                    <div style="color:{color}; font-size:24px; font-weight:800;">{value}</div>
+                <div style="background:white; padding:15px; border-radius:12px; border:1px solid #E2E8F0; text-align:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <div style="color:#718096; font-size:12px; font-weight:700; margin-bottom:5px; text-transform:uppercase;">{label}</div>
+                    <div style="color:{color}; font-size:26px; font-weight:800;">{value}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -358,14 +367,17 @@ else:
                 p_df = df[df["pet_name"] == pet].sort_values("date_applied")
                 
                 with st.container():
-                    c_head1, c_head2 = st.columns([3, 1])
+                    c_head1, c_head2 = st.columns([2.5, 1.2]) # Better ratio for button
                     c_head1.subheader(f"🐾 {pet}")
-                    # Styled Secondary Button
-                    if c_head2.button("İşlem Ekle", key=f"btn_{pet}", type="secondary"):
+                    
+                    # Styled Primary Button for Adding Vaccines
+                    if c_head2.button("➕ Aşı Ekle", key=f"btn_{pet}"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
+                    # Highlighted Expander
                     with st.expander("Detayları Göster", expanded=True):
-                        t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
+                        # Renamed "Grafik" to "Kilo Grafiği"
+                        t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Kilo Grafiği"])
                         
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
@@ -384,10 +396,7 @@ else:
                                 st.info(f"📝 {valid_notes[-1]}")
 
                         with t2:
-                            # FIX: Convert date to datetime before sending to editor to avoid Attribute Error
                             edit_df = p_df.copy()
-                            edit_df["date_applied"] = pd.to_datetime(edit_df["date_applied"])
-                            
                             edited = st.data_editor(
                                 edit_df,
                                 column_config={
