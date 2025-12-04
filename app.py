@@ -21,7 +21,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: THE "NO-REGRESSION" DESIGN SYSTEM ---
+# --- CSS: THE "PURE LIGHT" DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -37,11 +37,23 @@ st.markdown("""
     }
     .stApp { background-color: #F8F9FA !important; }
     
-    /* 2. TYPOGRAPHY */
+    /* 2. FORCE NATIVE INPUTS TO LIGHT MODE (Fixes Calendar) */
+    input[type="date"], input[type="text"], input[type="number"] {
+        color-scheme: light !important;
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    /* Fix Calendar Icon Visibility */
+    ::-webkit-calendar-picker-indicator {
+        filter: invert(0) !important;
+    }
+    
+    /* 3. TYPOGRAPHY */
     h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
     p, label, span, li, div { color: #4A5568 !important; }
     
-    /* 3. CARDS */
+    /* 4. CARDS */
     div.css-card {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -51,7 +63,7 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     
-    /* 4. BUTTONS */
+    /* 5. BUTTONS */
     div.stButton > button {
         width: 100%;
         border-radius: 12px;
@@ -61,12 +73,12 @@ st.markdown("""
         border: none;
         font-weight: 700;
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
+        transition: transform 0.1s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
         transform: scale(1.01);
     }
-    /* Secondary Button */
     button[kind="secondary"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
@@ -79,47 +91,62 @@ st.markdown("""
         background-color: #FFF5F5 !important;
     }
 
-    /* 5. MODAL / DIALOG FIXES (Crucial) */
+    /* 6. DIALOG / MODAL FIXES (The "Dark Mode Remnants" Killer) */
     div[role="dialog"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
     }
-    /* Force Close Button (X) to be Visible (Black) */
+    /* Force Close Button (X) to be Black */
     button[aria-label="Close"] {
         color: #1A202C !important;
         background-color: transparent !important;
         border: none !important;
     }
-    
-    /* 6. INPUTS & PILLS */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+    /* Force Selectbox Inner Container to White */
+    div[data-baseweb="select"] > div {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 10px;
+        border-color: #E2E8F0 !important;
     }
-    /* Fix Pills (Duration) Text Color */
+    
+    /* 7. PILLS (Geçerlilik Buttons) FIX */
+    /* Unselected State: Light Grey bg, Dark Text */
     div[data-baseweb="tag"] {
-        background-color: #EDF2F7 !important;
+        background-color: #F1F3F5 !important;
+        border: 1px solid #E2E8F0 !important;
     }
     div[data-baseweb="tag"] span {
-        color: #1A202C !important;
+        color: #4A5568 !important;
     }
-    /* Selected Pill */
+    /* Selected State: Red bg, White Text */
     div[data-baseweb="tag"][aria-selected="true"] {
         background-color: #FF6B6B !important;
+        border-color: #FF6B6B !important;
     }
     div[data-baseweb="tag"][aria-selected="true"] span {
-        color: white !important;
+        color: #FFFFFF !important;
     }
 
-    /* 7. SEGMENTED CONTROL TABS */
-    /* Add margin-bottom for spacing between tabs and content */
+    /* 8. DROPDOWN MENUS */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0;
+    }
+    li[role="option"] {
+        color: #2D3748 !important;
+        background-color: #FFFFFF !important;
+    }
+    li[role="option"]:hover {
+        background-color: #FFF5F5 !important;
+        color: #FF6B6B !important;
+    }
+
+    /* 9. TABS (Segmented Control) */
     .stTabs [data-baseweb="tab-list"] { 
         gap: 8px; 
         border-bottom: none; 
         padding-bottom: 15px; 
-        margin-bottom: 20px; /* Added Space */
+        margin-bottom: 20px;
     }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
@@ -137,7 +164,7 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
     
-    /* 8. EXPANDER HEADER */
+    /* 10. EXPANDER HEADER */
     .streamlit-expanderHeader {
         background-color: #FFFFFF !important;
         border: 2px solid #E2E8F0 !important;
@@ -161,7 +188,7 @@ st.markdown("""
         margin-top: -8px;
     }
 
-    /* 9. METRICS & UTILS */
+    /* 11. METRICS & UTILS */
     [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
     [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
     
@@ -172,7 +199,7 @@ st.markdown("""
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* 10. MOBILE FIXES */
+    /* 12. MOBILE SPECIFIC TWEAKS */
     @media only screen and (max-width: 600px) {
         .nav-link { 
             font-size: 12px !important; 
@@ -219,14 +246,12 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     with c1:
         vac = st.selectbox("Aşı / İşlem", ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
     with c2:
-        # FIXED: Default 0.0 allows stepper buttons to work instantly
         w = st.number_input("Kilo (kg)", step=0.1, value=0.0)
 
     d1 = st.date_input("Yapılan Tarih")
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
     
     if mode == "Otomatik":
-        # PILLS: Now styled by CSS
         dur = st.pills("Geçerlilik", ["1 Ay", "2 Ay", "3 Ay", "1 Yıl"], default="1 Yıl")
         m = 12 if "Yıl" in dur else int(dur.split()[0])
         d2 = d1 + timedelta(days=m*30)
@@ -292,7 +317,7 @@ if st.session_state["user"] is None:
                 st.write("")
                 if st.form_submit_button("Giriş Yap", type="primary"):
                     login(email, password)
-            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden otomatik oluşturun.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
 
         with tab2:
             st.markdown("### Hızlı Giriş")
@@ -319,10 +344,7 @@ if st.session_state["user"] is None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- HEADER & NAVIGATION ---
-    # Centered Logo on top for Mobile alignment
-    st.markdown("<h3 style='text-align: center; margin-bottom: 5px;'>🐾 PatiCheck</h3>", unsafe_allow_html=True)
-    
+    # --- NAVIGATION ---
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Profiller", "Ayarlar"],
@@ -344,6 +366,7 @@ else:
         c1, c2 = st.columns([2.5, 1.2])
         c1.subheader(f"👋 Merhaba")
         
+        # Primary Action Button
         if c2.button("➕ Pet / Aşı Ekle", type="primary"):
             existing = list(df["pet_name"].unique()) if not df.empty else []
             add_vaccine_dialog(existing)
@@ -418,16 +441,17 @@ else:
                 with st.container():
                     c_head1, c_head2 = st.columns([2.5, 1.2])
                     c_head1.subheader(f"🐾 {pet}")
+                    # Styled Secondary Button
                     if c_head2.button("Aşı Ekle", key=f"btn_{pet}", type="secondary"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
-                    # CLOSED by default
                     with st.expander("Detayları Göster", expanded=False):
                         t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
                         
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
                             col_a, col_b = st.columns(2)
+                            
                             last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0.0
                             col_a.metric("Kilo", f"{last_w} kg")
                             
