@@ -21,15 +21,21 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: DESIGN SYSTEM (MOBILE FIXED) ---
+# --- CSS: THE "NO-REGRESSION" DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. UNIVERSAL RESET (Force Light Mode) */
-    :root { color-scheme: light !important; }
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .stApp { background-color: #F8F9FA !important; color: #1A202C !important; }
+    /* 1. NUCLEAR LIGHT MODE ENFORCEMENT */
+    :root {
+        color-scheme: light !important;
+    }
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #F8F9FA;
+        color: #1A202C;
+    }
+    .stApp { background-color: #F8F9FA !important; }
     
     /* 2. TYPOGRAPHY */
     h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
@@ -55,12 +61,12 @@ st.markdown("""
         border: none;
         font-weight: 700;
         box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
-        transition: transform 0.1s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
         transform: scale(1.01);
     }
+    /* Secondary Button */
     button[kind="secondary"] {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
@@ -73,44 +79,48 @@ st.markdown("""
         background-color: #FFF5F5 !important;
     }
 
-    /* 5. MODAL / DIALOG FIXES (The "Invisible X" & Black Input Fix) */
+    /* 5. MODAL / DIALOG FIXES (Crucial) */
     div[role="dialog"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
     }
-    /* Fix the Close (X) button visibility */
-    div[role="dialog"] button[kind="header"] {
-        color: #1A202C !important; 
-        background-color: transparent !important;
-    }
-    /* Force inputs inside dialog to be white */
-    div[role="dialog"] input, div[role="dialog"] div[data-baseweb="select"] > div {
-        background-color: #FFFFFF !important;
+    /* Force Close Button (X) to be Visible (Black) */
+    button[aria-label="Close"] {
         color: #1A202C !important;
-        border: 1px solid #CBD5E0 !important;
+        background-color: transparent !important;
+        border: none !important;
     }
-    /* Force Date Picker to Light Mode */
-    input[type="date"] {
-        color-scheme: light !important;
-    }
-
-    /* 6. INPUTS & DROPDOWNS */
+    
+    /* 6. INPUTS & PILLS */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
         border: 2px solid #E2E8F0 !important;
         border-radius: 10px;
     }
-    
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0;
+    /* Fix Pills (Duration) Text Color */
+    div[data-baseweb="tag"] {
+        background-color: #EDF2F7 !important;
     }
-    li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
-    li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
-    
-    /* 7. TABS */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; }
+    div[data-baseweb="tag"] span {
+        color: #1A202C !important;
+    }
+    /* Selected Pill */
+    div[data-baseweb="tag"][aria-selected="true"] {
+        background-color: #FF6B6B !important;
+    }
+    div[data-baseweb="tag"][aria-selected="true"] span {
+        color: white !important;
+    }
+
+    /* 7. SEGMENTED CONTROL TABS */
+    /* Add margin-bottom for spacing between tabs and content */
+    .stTabs [data-baseweb="tab-list"] { 
+        gap: 8px; 
+        border-bottom: none; 
+        padding-bottom: 15px; 
+        margin-bottom: 20px; /* Added Space */
+    }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
         background-color: #FFFFFF;
@@ -118,6 +128,7 @@ st.markdown("""
         color: #718096;
         border: 1px solid #E2E8F0;
         font-weight: 600;
+        flex: 1 1 auto;
     }
     .stTabs [aria-selected="true"] {
         background-color: #FF6B6B;
@@ -161,22 +172,17 @@ st.markdown("""
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* --- 10. MOBILE SPECIFIC TWEAKS --- */
+    /* 10. MOBILE FIXES */
     @media only screen and (max-width: 600px) {
-        /* Fix Nav Wrap */
         .nav-link { 
             font-size: 12px !important; 
             padding: 5px 2px !important;
             white-space: nowrap !important;
         }
-        
-        /* Fix Aşı Ekle Button Width */
         div[data-testid="column"] button {
             width: 100% !important;
             margin-top: 10px !important;
         }
-        
-        /* Dialog Width on Mobile */
         div[role="dialog"] {
             width: 95vw !important;
         }
@@ -213,12 +219,14 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     with c1:
         vac = st.selectbox("Aşı / İşlem", ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
     with c2:
-        w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
+        # FIXED: Default 0.0 allows stepper buttons to work instantly
+        w = st.number_input("Kilo (kg)", step=0.1, value=0.0)
 
     d1 = st.date_input("Yapılan Tarih")
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
     
     if mode == "Otomatik":
+        # PILLS: Now styled by CSS
         dur = st.pills("Geçerlilik", ["1 Ay", "2 Ay", "3 Ay", "1 Yıl"], default="1 Yıl")
         m = 12 if "Yıl" in dur else int(dur.split()[0])
         d2 = d1 + timedelta(days=m*30)
@@ -239,7 +247,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
                     "vaccine_type": vac,
                     "date_applied": str(d1),
                     "next_due_date": str(d2),
-                    "weight": w if w else 0.0,
+                    "weight": w,
                     "notes": notes
                 }
                 supabase.table("vaccinations").insert(data).execute()
@@ -284,7 +292,7 @@ if st.session_state["user"] is None:
                 st.write("")
                 if st.form_submit_button("Giriş Yap", type="primary"):
                     login(email, password)
-            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden otomatik oluşturun.</p>", unsafe_allow_html=True)
 
         with tab2:
             st.markdown("### Hızlı Giriş")
@@ -311,7 +319,10 @@ if st.session_state["user"] is None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- NAVIGATION ---
+    # --- HEADER & NAVIGATION ---
+    # Centered Logo on top for Mobile alignment
+    st.markdown("<h3 style='text-align: center; margin-bottom: 5px;'>🐾 PatiCheck</h3>", unsafe_allow_html=True)
+    
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Profiller", "Ayarlar"],
@@ -333,7 +344,6 @@ else:
         c1, c2 = st.columns([2.5, 1.2])
         c1.subheader(f"👋 Merhaba")
         
-        # Primary Action Button
         if c2.button("➕ Pet / Aşı Ekle", type="primary"):
             existing = list(df["pet_name"].unique()) if not df.empty else []
             add_vaccine_dialog(existing)
@@ -408,18 +418,16 @@ else:
                 with st.container():
                     c_head1, c_head2 = st.columns([2.5, 1.2])
                     c_head1.subheader(f"🐾 {pet}")
-                    # Styled Secondary Button
                     if c_head2.button("Aşı Ekle", key=f"btn_{pet}", type="secondary"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
-                    # CHANGE: Expanded=False by default (Closed)
+                    # CLOSED by default
                     with st.expander("Detayları Göster", expanded=False):
                         t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Grafik"])
                         
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
                             col_a, col_b = st.columns(2)
-                            
                             last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0.0
                             col_a.metric("Kilo", f"{last_w} kg")
                             
@@ -449,7 +457,7 @@ else:
                                 use_container_width=True,
                                 key=f"editor_{pet}"
                             )
-                            if not edited.equals(p_df):
+                            if not edited.equals(edit_df):
                                 if st.button("Değişiklikleri Kaydet", key=f"save_{pet}", type="primary"):
                                     try:
                                         recs = edited.to_dict('records')
