@@ -21,128 +21,108 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- CSS: THE "LIVELY & READABLE" DESIGN SYSTEM ---
+# --- CSS: THE "SAFE & CLEAN" DESIGN SYSTEM ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. Reset */
-    * { font-family: 'Inter', sans-serif; }
+    /* 1. APP BACKGROUND (Soft Light) */
     .stApp { background-color: #F8F9FB; }
     
-    /* 2. Typography - High Contrast */
-    h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
-    p, label, span, li, div { color: #2D3748 !important; } /* Darker Grey for readability */
+    /* 2. SAFE TYPOGRAPHY (Does not break Icons) */
+    h1, h2, h3, h4, h5, h6, p, a, button, input, label, li, textarea, span, div {
+        font-family: 'Inter', sans-serif;
+    }
+    /* Protect Material Icons */
+    i, .material-icons, [data-testid="stExpander"] svg { 
+        font-family: 'Material Icons' !important; 
+    }
     
-    /* 3. Cards */
+    /* 3. COLORS */
+    h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
+    p, label, li { color: #4A5568 !important; }
+    
+    /* 4. CARDS */
     div.css-card {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-radius: 16px;
         padding: 20px;
         margin-bottom: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     
-    /* 4. Primary Buttons */
+    /* 5. BUTTONS (Brand Red) */
     div.stButton > button {
-        width: 100%;
-        border-radius: 12px;
-        height: 48px;
         background-color: #FF6B6B;
         color: white !important;
         border: none;
-        font-weight: 700;
-        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25);
-        transition: transform 0.1s;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.2s;
     }
     div.stButton > button:hover {
         background-color: #FA5252;
-        transform: scale(1.01);
-        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
     }
     
-    /* 5. Secondary Buttons (Grey) */
+    /* Secondary Button (Grey) */
     button[kind="secondary"] {
-        background-color: #EDF2F7 !important;
+        background-color: #FFFFFF !important;
         color: #2D3748 !important;
-        border: 1px solid #CBD5E0 !important;
-        box-shadow: none !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    button[kind="secondary"]:hover {
+        border-color: #FF6B6B !important;
+        color: #FF6B6B !important;
     }
 
-    /* 6. Inputs */
+    /* 6. INPUTS & DROPDOWNS */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
-        color: #1A202C !important; /* Almost Black text */
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 10px;
-        font-weight: 500;
+        color: #1A202C !important;
+        border: 1px solid #CBD5E0 !important;
+        border-radius: 8px;
     }
     
-    /* 7. Dropdown Menus (High Visibility) */
+    /* Dropdown Menus */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     }
-    li[role="option"] { color: #2D3748 !important; font-weight: 500; }
-    li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
-    
-    /* 8. TABS (Lively Design) */
-    .stTabs [data-baseweb="tab-list"] { 
-        gap: 8px; 
-        border-bottom: none;
-        padding-bottom: 10px;
+    li[role="option"] {
+        color: #2D3748 !important;
     }
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        background-color: #FFFFFF;
-        border-radius: 20px; /* Pill shape */
-        color: #4A5568;
-        border: 1px solid #E2E8F0;
-        font-weight: 600;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FF6B6B;
-        color: white !important;
-        border: none;
-        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
-    }
-    
-    /* 9. METRICS */
-    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { font-size: 13px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
-    
-    /* 10. EXPANDER HEADER (Highlight: Soft Red Background) */
-    .streamlit-expanderHeader {
-        background-color: #FFF5F5 !important; /* Very faint red */
-        border: 1px solid #FF6B6B !important; /* Red Border */
-        border-radius: 12px;
-        color: #D63031 !important; /* Dark Red Text */
-        font-weight: 700 !important;
-    }
-    .streamlit-expanderHeader:hover {
-        background-color: #FFE3E3 !important;
-    }
-    .streamlit-expanderHeader p { color: #D63031 !important; font-size: 15px; }
-    div[data-testid="stExpander"] { border: none; }
-    .streamlit-expanderContent {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-top: none;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        padding: 20px;
-        margin-top: -5px; /* Connect to header */
+    li[role="option"]:hover {
+        background-color: #FFF5F5 !important;
+        color: #FF6B6B !important;
     }
 
-    /* 11. UTILS */
+    /* 7. METRICS (High Contrast) */
+    [data-testid="stMetricValue"] { color: #1A202C !important; font-weight: 700; }
+    [data-testid="stMetricLabel"] { color: #718096 !important; }
+
+    /* 8. EXPANDER (Clean & Visible) */
+    .streamlit-expanderHeader {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        color: #2D3748;
+    }
+    /* Force text inside expander to be visible */
+    .streamlit-expanderHeader p { 
+        color: #2D3748 !important; 
+        font-weight: 600; 
+        font-size: 15px; 
+    }
+    div[data-testid="stExpander"] { border: none; }
+
+    /* 9. UTILS */
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
-    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     div[data-testid="InputInstructions"] { display: none !important; }
+    .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white; border: 1px solid #E2E8F0; }
 </style>
 """, unsafe_allow_html=True)
@@ -156,9 +136,10 @@ if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
 
-# --- DIALOGS ---
+# --- DIALOGS (MODERN INPUT) ---
 @st.dialog("💉 Yeni Aşı Kaydı")
 def add_vaccine_dialog(existing_pets, default_pet=None):
+    # Smart Pre-selection
     index = 0
     if default_pet and default_pet in existing_pets:
         index = existing_pets.index(default_pet) + 1 
@@ -179,6 +160,8 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         w = st.number_input("Kilo (kg)", step=0.1, value=None, placeholder="0.0")
 
     d1 = st.date_input("Yapılan Tarih")
+    
+    # RESTORED: Manual vs Auto Date
     mode = st.radio("Hesaplama", ["Otomatik", "Manuel"], horizontal=True, label_visibility="collapsed")
     
     if mode == "Otomatik":
@@ -212,7 +195,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# --- AUTH ---
+# --- AUTH LOGIC ---
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -228,7 +211,7 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --- ENTRY ---
+# --- ENTRY POINT ---
 if st.session_state["user"] is None:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
@@ -247,7 +230,7 @@ if st.session_state["user"] is None:
                 st.write("")
                 if st.form_submit_button("Giriş Yap", type="primary"):
                     login(email, password)
-            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden otomatik oluşturun.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; font-size:12px; margin-top:10px;'>Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.</p>", unsafe_allow_html=True)
 
         with tab2:
             st.markdown("### Hızlı Giriş")
@@ -283,7 +266,7 @@ else:
         orientation="horizontal",
         styles={
             "container": {"padding": "0!important", "background-color": "#FFFFFF", "border-radius": "12px", "border": "1px solid #E2E8F0", "box-shadow": "0 2px 4px rgba(0,0,0,0.02)"},
-            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#2D3748", "font-weight": "500"},
+            "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "color": "#718096"},
             "nav-link-selected": {"background-color": "#FF6B6B", "color": "white", "font-weight": "600"},
         }
     )
@@ -293,8 +276,10 @@ else:
 
     # --- HOME ---
     if selected == "Ana Sayfa":
-        c1, c2 = st.columns([2.5, 1.2]) # Adjusted ratio for button spacing
+        c1, c2 = st.columns([2.5, 1.2])
         c1.subheader(f"👋 Merhaba")
+        
+        # Primary Action Button
         if c2.button("➕ Pet / Aşı Ekle", type="primary"):
             existing = list(df["pet_name"].unique()) if not df.empty else []
             add_vaccine_dialog(existing)
@@ -305,10 +290,11 @@ else:
             df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
             today = date.today()
             
+            # DASHBOARD STATS
             k1, k2, k3 = st.columns(3)
             def styled_metric(label, value, color="#1A202C"):
                 st.markdown(f"""
-                <div style="background:white; padding:15px; border-radius:12px; border:1px solid #E2E8F0; text-align:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                <div style="background:white; padding:15px; border-radius:12px; border:1px solid #E2E8F0; text-align:center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                     <div style="color:#718096; font-size:12px; font-weight:700; margin-bottom:5px; text-transform:uppercase;">{label}</div>
                     <div style="color:{color}; font-size:26px; font-weight:800;">{value}</div>
                 </div>
@@ -323,6 +309,7 @@ else:
             st.write("")
             st.write("")
             
+            # URGENT LIST
             urgent = df[df["next_due_date"] <= (today + timedelta(days=7))].sort_values("next_due_date")
             
             if not urgent.empty:
@@ -330,13 +317,13 @@ else:
                 for _, row in urgent.iterrows():
                     days = (row['next_due_date'] - today).days
                     if days < 0:
-                        colors = ("#FFF5F5", "#C53030")
+                        colors = ("#FFF5F5", "#C53030") # Red
                         msg = f"{abs(days)} GÜN GEÇTİ"
                     elif days <= 3:
-                        colors = ("#FFFAF0", "#C05621")
+                        colors = ("#FFFAF0", "#C05621") # Orange
                         msg = f"{days} GÜN KALDI"
                     else:
-                        colors = ("#F0FFF4", "#2F855A")
+                        colors = ("#F0FFF4", "#2F855A") # Green
                         msg = f"{days} GÜN VAR"
                     
                     st.markdown(f"""
@@ -367,21 +354,20 @@ else:
                 p_df = df[df["pet_name"] == pet].sort_values("date_applied")
                 
                 with st.container():
-                    c_head1, c_head2 = st.columns([2.5, 1.2]) # Better ratio for button
+                    c_head1, c_head2 = st.columns([2.5, 1.2])
                     c_head1.subheader(f"🐾 {pet}")
-                    
-                    # Styled Primary Button for Adding Vaccines
-                    if c_head2.button("➕ Aşı Ekle", key=f"btn_{pet}"):
+                    # Smart Redirect Button
+                    if c_head2.button("Aşı Ekle", key=f"btn_{pet}", type="secondary"):
                         add_vaccine_dialog(list(pets), default_pet=pet)
                     
-                    # Highlighted Expander
                     with st.expander("Detayları Göster", expanded=True):
-                        # Renamed "Grafik" to "Kilo Grafiği"
+                        # TABS - Standard Streamlit Tabs (Styled by CSS)
                         t1, t2, t3 = st.tabs(["Genel", "Geçmiş", "Kilo Grafiği"])
                         
                         with t1:
                             future = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
                             col_a, col_b = st.columns(2)
+                            
                             last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0
                             col_a.metric("Kilo", f"{last_w} kg")
                             
@@ -434,8 +420,14 @@ else:
                                     marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)),
                                     fill='tozeroy', 
                                     fillcolor='rgba(255, 107, 107, 0.1)',
-                                    name='Kilo'
+                                    name='Kilo',
+                                    hovertemplate='<b>Tarih:</b> %{x|%d.%m.%Y}<br><b>Kilo:</b> %{y} kg<extra></extra>'
                                 ))
+                                # Ref Line for single point
+                                if len(p_df) == 1:
+                                    val = p_df["weight"].iloc[0]
+                                    fig.add_hline(y=val, line_dash="dot", line_color="#CBD5E0")
+
                                 fig.update_layout(
                                     height=250, margin=dict(t=10,b=0,l=0,r=0), 
                                     paper_bgcolor='rgba(0,0,0,0)', 
