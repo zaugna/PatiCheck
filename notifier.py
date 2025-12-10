@@ -21,84 +21,67 @@ def clean_text(text):
     if not text: return ""
     return str(text).strip()
 
-def send_alert(to_email, pet, vaccine, due_date, days_left):
+def send_alert(to_email, name, pet, vaccine, due_date, days_left):
     print(f"Sending to {to_email}...")
     
     pet_clean = clean_text(pet)
     vaccine_clean = clean_text(vaccine)
+    
+    # Use Name if available
+    greeting = f"Sayın {name}," if name else "Merhaba,"
     
     # Calendar Link
     start = due_date.replace("-","") + "T090000"
     end = due_date.replace("-","") + "T091500"
     gcal_link = f"https://www.google.com/calendar/render?action=TEMPLATE&text={pet_clean}-{vaccine_clean}&dates={start}/{end}&details=PatiCheck&sf=true&output=xml"
     
-    # --- BODY DESIGN LOGIC (Urgency Colors) ---
+    # --- DESIGN LOGIC ---
     if days_left < 0:
-        # OVERDUE
-        color = "#D93025" # Google Red
+        color = "#D93025" # Red
         bg_color = "#FCE8E6"
-        
         header_tr = "GECİKTİ"
         header_en = "OVERDUE"
-        
         status_tr = f"{abs(days_left)} gün geçti"
         status_en = f"{abs(days_left)} days overdue"
-        
         intro_tr = "Bu aşı tarihi geçmiş durumda. Lütfen kontrol ediniz."
         intro_en = "This vaccination is past due. Please check."
         
     elif days_left == 0:
-        # TODAY
-        color = "#F9AB00" # Google Orange
+        color = "#F9AB00" # Orange
         bg_color = "#FEF7E0"
-        
         header_tr = "BUGÜN"
         header_en = "TODAY"
-        
         status_tr = "Bugün Yapılmalı"
         status_en = "Due Today"
-        
         intro_tr = "Aşı günü geldi çattı!"
         intro_en = "Vaccination day is here!"
         
     elif days_left <= 3:
-        # URGENT UPCOMING
         color = "#E37400" # Dark Orange
         bg_color = "#FFF3E0"
-        
         header_tr = "AZ KALDI"
         header_en = "SOON"
-        
         status_tr = f"{days_left} gün kaldı"
         status_en = f"{days_left} days left"
-        
         intro_tr = "Veteriner zamanı yaklaşıyor."
         intro_en = "Vet time is approaching."
         
     else:
-        # STANDARD REMINDER
-        color = "#188038" # Google Green
+        color = "#188038" # Green
         bg_color = "#E6F4EA"
-        
         header_tr = "HATIRLATMA"
         header_en = "REMINDER"
-        
         status_tr = f"{days_left} gün kaldı"
         status_en = f"{days_left} days left"
-        
         intro_tr = "Önümüzdeki hafta için hatırlatma."
         intro_en = "Reminder for the upcoming week."
 
     # Email Content
     msg = MIMEMultipart()
-    
-    # --- STATIC SUBJECT LINE (Requested) ---
     msg['Subject'] = "PatiCheck / Asi Hatırlatmasi / Vaccination Reminder"
-    
     msg['From'] = f"PatiCheck <{SMTP_USER}>"
     msg['To'] = to_email
     
-    # HTML DESIGN
     html = f"""
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; color: #333;">
         
@@ -118,6 +101,8 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
 
             <div style="padding: 30px 25px; background-color: #ffffff;">
                 
+                <p style="margin-top: 0; font-size: 16px;">{greeting}</p>
+
                 <div style="text-align: center; margin-bottom: 30px;">
                     <div style="font-size: 32px; font-weight: 900; color: #000000; line-height: 1.1; margin-bottom: 10px;">
                         {pet_clean}
@@ -173,7 +158,7 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
             s.login(SMTP_USER, SMTP_PASS)
             s.sendmail(SMTP_USER, to_email, msg.as_string())
             print(f"Sent email to {to_email}")
-        time.sleep(1) # Anti-spam buffer
+        time.sleep(1)
     except Exception as e:
         print(f"Error sending to {to_email}: {e}")
 
@@ -182,13 +167,13 @@ today = date.today()
 print(f"Checking vaccines for {today}...")
 
 try:
-    response = supabase.table("vaccinations").select("*, profiles(email)").execute()
+    # Updated Query: Fetch full_name from profiles
+    response = supabase.table("vaccinations").select("*, profiles(email, full_name)").execute()
     rows = response.data
 except Exception as e:
     print(f"Database Error: {e}")
     rows = []
 
-# SMART SCHEDULE
 NOTIFY_DAYS = [7, 3, 1, 0, -3, -7]
 
 for row in rows:
@@ -199,8 +184,10 @@ for row in rows:
         
         if days_left in NOTIFY_DAYS:
             if row['profiles'] and row['profiles'].get('email'):
-                email = row['profiles']['email'] 
-                send_alert(email, row['pet_name'], row['vaccine_type'], due_str, days_left)
+                email = row['profiles']['email']
+                # Get name safely
+                name = row['profiles'].get('full_name', '')
+                send_alert(email, name, row['pet_name'], row['vaccine_type'], due_str, days_left)
             else:
                 print(f"No email found for user {row['user_id']}")
     except Exception as e:
