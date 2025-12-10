@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from supabase import create_client
 import time
 from streamlit_option_menu import option_menu
+import os
 
 # --- CONFIG ---
 st.set_page_config(page_title="PatiCheck", page_icon="🐾", layout="centered")
@@ -58,7 +59,9 @@ TRANS = {
     "metric_overdue": {"TR": "Gecikmiş", "EN": "Overdue"},
     "urgent_header": {"TR": "🚨 ACİL DURUMLAR", "EN": "🚨 URGENT ALERTS"},
     "days_passed": {"TR": "GÜN GEÇTİ", "EN": "DAYS AGO"},
+    "day_passed": {"TR": "GÜN GEÇTİ", "EN": "DAY AGO"}, # Singular
     "days_left": {"TR": "GÜN KALDI", "EN": "DAYS LEFT"},
+    "day_left": {"TR": "GÜN KALDI", "EN": "DAY LEFT"}, # Singular
     "days_ok": {"TR": "GÜN VAR", "EN": "DAYS LEFT"},
     "no_urgent": {"TR": "Harika! Önümüzdeki 7 gün içinde acil bir durum yok.", "EN": "Great! No urgent items in the next 7 days."},
     
@@ -107,6 +110,16 @@ TRANS = {
     "warn_name": {"TR": "Lütfen bir isim girin.", "EN": "Please enter a name."},
     "warn_date": {"TR": "Lütfen geçerlilik süresini (veya tarihini) seçin.", "EN": "Please select validity or due date."},
     "success_save": {"TR": "Kaydedildi!", "EN": "Saved!"},
+    
+    # Vaccine Types
+    "vac_karma": {"TR": "Karma", "EN": "Mixed (Karma)"},
+    "vac_rabies": {"TR": "Kuduz", "EN": "Rabies"},
+    "vac_leukemia": {"TR": "Lösemi", "EN": "Leukemia"},
+    "vac_internal": {"TR": "İç Parazit", "EN": "Internal Parasite"},
+    "vac_external": {"TR": "Dış Parazit", "EN": "External Parasite"},
+    "vac_kc": {"TR": "Bronşin (KC)", "EN": "Kennel Cough"},
+    "vac_lyme": {"TR": "Lyme", "EN": "Lyme"},
+    "vac_checkup": {"TR": "Check-up", "EN": "Check-up"},
     
     # Table Columns
     "col_vac": {"TR": "Aşı", "EN": "Vaccine"},
@@ -192,7 +205,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- STATE INITIALIZATION (RESTORED) ---
+# --- STATE INITIALIZATION ---
 if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
@@ -201,10 +214,28 @@ if not supabase:
     st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
 
+# --- HEADER FUNCTION (Branding) ---
+def render_header():
+    # Logo Logic: Checks for 'logo.png' in the root folder
+    if os.path.exists("logo.png"):
+        c1, c2, c3 = st.columns([1, 2, 1])
+        with c2:
+            st.image("logo.png", use_container_width=True)
+    
+    # Rebranded Title
+    st.markdown("""
+        <h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px; margin-bottom: 0;'>
+            Pati<span style='color:#FF6B6B'>*</span>Check
+        </h1>
+        <p style='text-align: center; font-size: 0.9rem; color: #A0AEC0 !important; font-style: italic; margin-top: -10px; margin-bottom: 20px;'>
+            * Pati means 'Paw' in Turkish
+        </p>
+    """, unsafe_allow_html=True)
+
 # --- DIALOGS ---
-@st.dialog("Dialog") # Title placeholder, we override inside
+@st.dialog("Dialog") 
 def add_vaccine_dialog(existing_pets, default_pet=None):
-    st.markdown(f"### {T('dialog_title')}") # Manual Header since dialog title is static
+    st.markdown(f"### {T('dialog_title')}") 
     
     index = 0
     if default_pet and default_pet in existing_pets:
@@ -221,7 +252,13 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
 
     c1, c2 = st.columns(2)
     with c1:
-        vac = st.selectbox(T("label_vac"), ["Karma", "Kuduz", "Lösemi", "İç Parazit", "Dış Parazit", "Bronşin", "Lyme", "Check-up"])
+        # Translated Vaccine Options
+        vac_opts = [
+            T("vac_karma"), T("vac_rabies"), T("vac_leukemia"), 
+            T("vac_internal"), T("vac_external"), T("vac_kc"), 
+            T("vac_lyme"), T("vac_checkup")
+        ]
+        vac = st.selectbox(T("label_vac"), vac_opts)
     with c2:
         w = st.number_input(T("label_weight"), step=0.1, value=0.0)
 
@@ -230,13 +267,10 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     
     d2 = None
     if mode == T("opt_auto"):
-        # Pills options must match the translation dictionary keys logic or values
-        # Simplified: We use values directly
         pills_opts = [T("pill_1m"), T("pill_2m"), T("pill_3m"), T("pill_1y")]
         dur = st.pills(T("label_validity"), pills_opts, default=T("pill_1y"))
         
         if dur:
-            # Simple parsing logic
             val = int(dur.split()[0])
             days = val * 30 if "Ay" in dur or "Mo" in dur else val * 365
             d2 = d1 + timedelta(days=days)
@@ -279,7 +313,7 @@ def login(email, password):
         st.rerun()
     except Exception as e:
         msg = str(e)
-        if "Email not confirmed" in msg: st.error("Email not confirmed")
+        if "Email not confirmed" in msg: st.error(T("email_confirm_error"))
         else: st.error(T("error_login"))
 
 def logout():
@@ -290,14 +324,14 @@ def logout():
 # --- ENTRY ---
 if st.session_state["user"] is None:
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px;'>🐾 PatiCheck</h1>", unsafe_allow_html=True)
+    render_header() # New Header with Logo Support
+    
     st.markdown(f"<p style='text-align: center; color: #718096 !important; font-size: 1.2rem; margin-top: -10px;'>{T('app_slogan')}</p>", unsafe_allow_html=True)
     st.write("")
     
     with st.container():
         st.markdown('<div class="css-card">', unsafe_allow_html=True)
         
-        # LANGUAGE TOGGLE (LOGIN SCREEN)
         lang_c1, lang_c2 = st.columns([4, 1])
         with lang_c2:
             l_sel = st.selectbox("Dil / Lang", ["TR", "EN"], label_visibility="collapsed")
@@ -344,7 +378,7 @@ if st.session_state["user"] is None:
 
 else:
     # --- HEADER & NAVIGATION ---
-    st.markdown("<h3 style='text-align: center; margin-bottom: 5px;'>🐾 PatiCheck</h3>", unsafe_allow_html=True)
+    render_header() # New Header
     
     selected = option_menu(
         menu_title=None,
@@ -403,13 +437,18 @@ else:
                     days = (row['next_due_date'] - today).days
                     if days < 0:
                         colors = ("#FFF5F5", "#C53030")
-                        msg = f"{abs(days)} {T('days_passed')}"
+                        # Fix Pluralization for Past
+                        suffix = T("day_passed") if abs(days) == 1 else T("days_passed")
+                        msg = f"{abs(days)} {suffix}"
                     elif days <= 3:
                         colors = ("#FFFAF0", "#C05621")
-                        msg = f"{days} {T('days_left')}"
+                        # Fix Pluralization for Future
+                        suffix = T("day_left") if days == 1 else T("days_left")
+                        msg = f"{days} {suffix}"
                     else:
                         colors = ("#F0FFF4", "#2F855A")
-                        msg = f"{days} {T('days_ok')}"
+                        suffix = T("day_left") if days == 1 else T("days_ok")
+                        msg = f"{days} {suffix}"
                     
                     st.markdown(f"""
                     <div style="background-color: {colors[0]}; border: 1px solid {colors[1]}30; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
@@ -519,7 +558,6 @@ else:
     elif selected == T("nav_settings"):
         st.title(T("settings_title"))
         
-        # LANGUAGE TOGGLE (Inside Settings)
         st.write("---")
         lang_sel = st.selectbox("Dil / Language", ["TR", "EN"], index=0 if st.session_state.lang == 'TR' else 1)
         if lang_sel != st.session_state.lang:
