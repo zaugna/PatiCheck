@@ -32,60 +32,141 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
     end = due_date.replace("-","") + "T091500"
     gcal_link = f"https://www.google.com/calendar/render?action=TEMPLATE&text={pet_clean}-{vaccine_clean}&dates={start}/{end}&details=PatiCheck&sf=true&output=xml"
     
-    # --- LOGIC: DYNAMIC URGENCY & TEXT ---
+    # --- DESIGN LOGIC ---
+    # We separate the languages to style them differently (Hierarchy)
+    
     if days_left < 0:
-        urgency = "🚨"
-        subject_prefix = "GECİKTİ"
-        color = "#d32f2f" # Dark Red
-        intro = f"Dikkat! {abs(days_left)} gün gecikti."
-        status_label = f"{abs(days_left)} gün GEÇTİ"
-        status_color = "red"
+        # OVERDUE
+        color = "#D93025" # Google Red
+        bg_color = "#FCE8E6"
+        icon = "🚨"
+        
+        # Text
+        header_tr = "GECİKTİ"
+        header_en = "OVERDUE"
+        
+        status_tr = f"{abs(days_left)} gün geçti"
+        status_en = f"{abs(days_left)} days overdue"
+        
+        intro_tr = "Bu aşı tarihi geçmiş durumda. Lütfen kontrol ediniz."
+        intro_en = "This vaccination is past due. Please check."
         
     elif days_left == 0:
-        urgency = "⭐"
-        subject_prefix = "BUGÜN"
-        color = "#f57c00" # Orange
-        intro = "Aşı günü geldi çattı!"
-        status_label = "BUGÜN"
-        status_color = "orange"
+        # TODAY
+        color = "#F9AB00" # Google Orange
+        bg_color = "#FEF7E0"
+        icon = "⭐"
+        
+        header_tr = "BUGÜN"
+        header_en = "TODAY"
+        
+        status_tr = "Bugün Yapılmalı"
+        status_en = "Due Today"
+        
+        intro_tr = "Aşı günü geldi çattı!"
+        intro_en = "Vaccination day is here!"
         
     elif days_left <= 3:
-        urgency = "⚠️"
-        subject_prefix = "AZ KALDI"
-        color = "#e63946" # Soft Red
-        intro = "Veteriner zamanı yaklaşıyor."
-        status_label = f"{days_left} gün KALDI"
-        status_color = "#e63946"
+        # URGENT UPCOMING
+        color = "#E37400" # Dark Orange
+        bg_color = "#FFF3E0"
+        icon = "⚠️"
+        
+        header_tr = "AZ KALDI"
+        header_en = "SOON"
+        
+        status_tr = f"{days_left} gün kaldı"
+        status_en = f"{days_left} days left"
+        
+        intro_tr = "Veteriner zamanı yaklaşıyor."
+        intro_en = "Vet time is approaching."
         
     else:
-        urgency = "📅"
-        subject_prefix = "HATIRLATMA"
-        color = "#2a9d8f" # Teal
-        intro = "Önümüzdeki hafta için hatırlatma."
-        status_label = f"{days_left} gün KALDI"
-        status_color = "#2a9d8f"
+        # STANDARD REMINDER
+        color = "#188038" # Google Green
+        bg_color = "#E6F4EA"
+        icon = "📅"
+        
+        header_tr = "HATIRLATMA"
+        header_en = "REMINDER"
+        
+        status_tr = f"{days_left} gün kaldı"
+        status_en = f"{days_left} days left"
+        
+        intro_tr = "Önümüzdeki hafta için hatırlatma."
+        intro_en = "Reminder for the upcoming week."
 
+    # Email Content
     msg = MIMEMultipart()
-    msg['Subject'] = f"{urgency} {subject_prefix}: {pet_clean} - {vaccine_clean}"
+    msg['Subject'] = f"{icon} {pet_clean}: {vaccine_clean} ({status_tr})"
     msg['From'] = f"PatiCheck <{SMTP_USER}>"
     msg['To'] = to_email
     
+    # HTML DESIGN (Clean Card)
     html = f"""
-    <div style="font-family: 'Helvetica', sans-serif; padding: 20px; color: #333; max-width: 500px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: {color}; margin-top: 0;">{urgency} {intro}</h2>
-        <div style="background-color: #f9f9f9; padding: 15px; border-left: 5px solid {color}; margin: 20px 0; border-radius: 4px;">
-            <p style="margin: 5px 0; font-size: 18px;"><strong>🐾 {pet_clean}</strong></p>
-            <p style="margin: 5px 0;">💉 <strong>İşlem:</strong> {vaccine_clean}</p>
-            <p style="margin: 5px 0;">📅 <strong>Tarih:</strong> {due_date}</p>
-            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 16px; color: {status_color};">
-                ⏳ Durum: {status_label}
-            </p>
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; color: #333;">
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: #333; font-weight: 800; letter-spacing: -1px;">
+                Pati<span style="color: #FF6B6B;">*</span>Check
+            </h2>
         </div>
-        <a href="{gcal_link}" style="background-color:{color}; color:white; padding:12px 24px; text-decoration:none; border-radius:50px; font-weight:bold; display:inline-block;">
-            📅 Takvime Ekle
-        </a>
-        <p style="margin-top: 30px; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 10px;">
-            Bu mesaj PatiCheck asistanı tarafından otomatik gönderilmiştir.
+
+        <div style="border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            
+            <div style="background-color: {color}; padding: 15px; text-align: center; color: white;">
+                <h3 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 1px;">
+                    {header_tr} <span style="font-weight: 300; opacity: 0.8;">| {header_en}</span>
+                </h3>
+            </div>
+
+            <div style="padding: 25px; background-color: #ffffff;">
+                
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <div style="font-size: 28px; font-weight: 800; color: #1a1a1a; margin-bottom: 5px;">
+                        {pet_clean}
+                    </div>
+                    <div style="font-size: 18px; color: #555; font-weight: 500;">
+                        {vaccine_clean}
+                    </div>
+                </div>
+
+                <div style="background-color: {bg_color}; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                            <td align="center" style="padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                                <div style="font-size: 12px; color: {color}; text-transform: uppercase; font-weight: 700;">TARİH / DATE</div>
+                                <div style="font-size: 18px; font-weight: 600; color: #333;">{due_date}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="padding-top: 10px;">
+                                <div style="font-size: 12px; color: {color}; text-transform: uppercase; font-weight: 700;">DURUM / STATUS</div>
+                                <div style="font-size: 16px; font-weight: 700; color: {color};">
+                                    {status_tr} <span style="font-weight: 400; color: #666; font-size: 14px;">({status_en})</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <p style="text-align: center; font-size: 14px; line-height: 1.5; color: #444; margin-bottom: 25px;">
+                    <strong>{intro_tr}</strong><br>
+                    <span style="color: #888; font-style: italic;">{intro_en}</span>
+                </p>
+
+                <div style="text-align: center;">
+                    <a href="{gcal_link}" style="background-color: {color}; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
+                        📅 Takvime Ekle / Add to Calendar
+                    </a>
+                </div>
+
+            </div>
+        </div>
+        
+        <p style="text-align: center; font-size: 11px; color: #aaa; margin-top: 20px;">
+            PatiCheck Asistan / Assistant <br>
+            <a href="{APP_URL}" style="color: #aaa; text-decoration: underline;">Uygulamaya Git / Go to App</a>
         </p>
     </div>
     """
@@ -96,7 +177,7 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
             s.login(SMTP_USER, SMTP_PASS)
             s.sendmail(SMTP_USER, to_email, msg.as_string())
             print(f"Sent email to {to_email}")
-        time.sleep(1)
+        time.sleep(1) # Anti-spam buffer
     except Exception as e:
         print(f"Error sending to {to_email}: {e}")
 
@@ -111,6 +192,7 @@ except Exception as e:
     print(f"Database Error: {e}")
     rows = []
 
+# SMART SCHEDULE
 NOTIFY_DAYS = [7, 3, 1, 0, -3, -7]
 
 for row in rows:
@@ -128,21 +210,10 @@ for row in rows:
     except Exception as e:
         print(f"Skipping row due to error: {e}")
 
-# --- ROBUST WAKE UP CALL ---
-# Tries 3 times with long timeouts to allow 'Cold Boot'
-if APP_URL:
-    print(f"Attempting to wake up {APP_URL}...")
-    for i in range(3):
-        try:
-            # 60 second timeout gives Streamlit time to boot up
-            r = requests.get(APP_URL, timeout=60)
-            if r.status_code == 200:
-                print(f"✅ App is awake! (Status: {r.status_code})")
-                break
-            else:
-                print(f"⚠️ App returned status {r.status_code}. Retrying...")
-        except Exception as e:
-            print(f"⚠️ Wake up attempt {i+1} failed: {e}")
-            time.sleep(5) # Wait 5s before retry
-    else:
-        print("❌ Failed to wake app after 3 attempts.")
+# --- WAKE UP CALL ---
+try:
+    if APP_URL:
+        requests.get(APP_URL, timeout=10)
+        print("Ping success.")
+except:
+    pass
