@@ -43,7 +43,7 @@ TRANS = {
     "code_sent": {"TR": "Kod gönderildi:", "EN": "Code sent to:"},
     "enter_code": {"TR": "6 Haneli Kod", "EN": "6 Digit Code"},
     
-    # Onboarding Dialog
+    # Onboarding
     "setup_title": {"TR": "Hesap Kurulumu", "EN": "Account Setup"},
     "setup_intro": {"TR": "Giriş başarılı! Lütfen isminizi ve kalıcı şifrenizi belirleyin.", "EN": "Login successful! Please set your name and permanent password."},
     "label_name": {"TR": "İsim", "EN": "Name"},
@@ -55,6 +55,7 @@ TRANS = {
     "error_code": {"TR": "Hatalı Kod.", "EN": "Invalid Code."},
     "email_confirm_error": {"TR": "Lütfen email onaylayın.", "EN": "Please confirm your email."},
     "success_setup": {"TR": "Hesap oluşturuldu!", "EN": "Account setup complete!"},
+    "fill_all": {"TR": "Lütfen tüm alanları doldurun.", "EN": "Please fill all fields."},
     
     # Navigation
     "nav_home": {"TR": "Ana Sayfa", "EN": "Home"},
@@ -140,71 +141,112 @@ TRANS = {
 }
 
 def T(key):
-    """Translation Helper"""
     lang = st.session_state.lang
     return TRANS.get(key, {}).get(lang, key)
 
-# --- CSS: LIGHT MODE & VISIBILITY FIXES ---
+# --- CSS: THE DIAMOND-GRADE FIX ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+    
+    /* 1. UNIVERSAL FORCE LIGHT */
     :root { color-scheme: light !important; }
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8F9FA; color: #1A202C; }
-    .stApp { background-color: #F8F9FA !important; }
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #F8F9FA !important;
+        color: #1A202C !important;
+    }
     
-    /* Typography */
-    h1, h2, h3 { color: #1A202C !important; font-weight: 800; letter-spacing: -0.5px; }
-    p, label, span, li, div { color: #4A5568 !important; }
+    /* 2. INPUTS & SELECTBOXES (The "Black Box" Killer) */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    /* Specifically target Selectbox Internal Divs */
+    div[data-baseweb="select"] {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+    }
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+        border-color: #E2E8F0 !important;
+    }
+    /* Selected Value Text Color */
+    div[data-baseweb="select"] span {
+        color: #1A202C !important;
+    }
     
-    /* Cards */
-    div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    /* 3. PILLS (VALIDITY BUTTONS) FIX */
+    /* Container */
+    div[data-baseweb="tag"] {
+        background-color: #F1F3F5 !important; /* Light Grey */
+        border: 1px solid #E2E8F0 !important;
+    }
+    /* Text inside Tag */
+    div[data-baseweb="tag"] span {
+        color: #4A5568 !important; /* Dark Grey Text */
+    }
+    /* SELECTED State */
+    div[data-baseweb="tag"][aria-selected="true"] {
+        background-color: #FF6B6B !important; /* Red */
+        border-color: #FF6B6B !important;
+    }
+    div[data-baseweb="tag"][aria-selected="true"] span {
+        color: #FFFFFF !important; /* White Text */
+    }
+
+    /* 4. MODAL / DIALOG BACKGROUNDS */
+    div[role="dialog"] {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+    }
+    /* Fix Close X Button */
+    button[aria-label="Close"] {
+        color: #1A202C !important;
+        background-color: transparent !important;
+        border: none !important;
+    }
     
-    /* Buttons */
-    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; box-shadow: 0 4px 6px rgba(255, 107, 107, 0.25); transition: transform 0.1s; }
+    /* 5. NATIVE DATE PICKER & PASSWORDS */
+    input[type="date"] { color-scheme: light !important; }
+    input[type="password"] { background-color: #FFFFFF !important; color: #1A202C !important; }
+
+    /* 6. DROPDOWN MENUS (Popup List) */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    li[role="option"] {
+        color: #2D3748 !important;
+        background-color: #FFFFFF !important;
+    }
+    li[role="option"]:hover {
+        background-color: #FFF5F5 !important;
+        color: #FF6B6B !important;
+    }
+
+    /* 7. STANDARD UI ELEMENTS */
+    div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    
+    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; box-shadow: 0 4px 6px rgba(255,107,107,0.25); }
     div.stButton > button:hover { background-color: #FA5252; transform: scale(1.01); }
+    
     button[kind="secondary"] { background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; box-shadow: none !important; }
     button[kind="secondary"]:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; background-color: #FFF5F5 !important; }
 
-    /* Modal Fixes */
-    div[role="dialog"] { background-color: #FFFFFF !important; color: #1A202C !important; }
-    button[aria-label="Close"] { color: #1A202C !important; background-color: transparent !important; border: none !important; }
-    
-    /* Inputs */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] { background-color: #FFFFFF !important; color: #1A202C !important; border: 2px solid #E2E8F0 !important; border-radius: 10px; }
-    input[type="password"] { background-color: #FFFFFF !important; color: #1A202C !important; -webkit-text-fill-color: #1A202C !important; }
-
-    /* Pills */
-    div[data-baseweb="tag"] { background-color: #F1F3F5 !important; border: 1px solid #E2E8F0 !important; cursor: pointer; }
-    div[data-baseweb="tag"] span, div[data-baseweb="tag"] div { color: #4A5568 !important; }
-    div[data-baseweb="tag"][aria-selected="true"] { background-color: #FF6B6B !important; border-color: #FF6B6B !important; }
-    div[data-baseweb="tag"][aria-selected="true"] span, div[data-baseweb="tag"][aria-selected="true"] div { color: #FFFFFF !important; }
-
-    /* Dropdowns */
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0; }
-    li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
-    li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
-    
-    /* SELECTBOX VISIBILITY FIX (Language Selection) */
-    div[data-baseweb="select"] div {
-        color: #1A202C !important; /* Force Dark Text */
-        background-color: #FFFFFF !important; /* Force White BG */
-    }
-
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; margin-bottom: 20px; }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; background-color: #FFFFFF; border-radius: 20px; color: #718096; border: 1px solid #E2E8F0; font-weight: 600; flex: 1 1 auto; }
-    .stTabs [aria-selected="true"] { background-color: #FF6B6B; color: white !important; border: none; box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3); }
+    .stTabs [aria-selected="true"] { background-color: #FF6B6B; color: white !important; border: none; }
     
-    /* Expander */
     .streamlit-expanderHeader { background-color: #FFFFFF !important; border: 2px solid #E2E8F0 !important; border-radius: 12px !important; color: #1A202C !important; font-weight: 600 !important; }
     .streamlit-expanderHeader:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; }
     .streamlit-expanderHeader p { color: inherit !important; }
     div[data-testid="stExpander"] { border: none; box-shadow: none; }
-    .streamlit-expanderContent { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-top: none; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: 20px; margin-top: -8px; }
-
-    /* Metrics & Utils */
-    [data-testid="stMetricValue"] { font-size: 26px !important; color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { font-size: 12px !important; color: #718096 !important; font-weight: 700; text-transform: uppercase; }
+    
+    [data-testid="stMetricValue"] { color: #1A202C !important; }
+    [data-testid="stMetricLabel"] { color: #718096 !important; }
     [data-testid="stSidebar"] { display: none; }
     #MainMenu { display: none; }
     footer { display: none; }
@@ -212,7 +254,7 @@ st.markdown("""
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* Mobile */
+    /* Mobile Tweaks */
     @media only screen and (max-width: 600px) {
         .nav-link { font-size: 12px !important; padding: 5px 2px !important; white-space: nowrap !important; }
         div[data-testid="column"] button { width: 100% !important; margin-top: 10px !important; }
@@ -225,14 +267,13 @@ st.markdown("""
 if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
-# Flag for the onboarding popup
 if "show_onboarding" not in st.session_state: st.session_state["show_onboarding"] = False
 
 if not supabase:
     st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
 
-# --- HELPER: HEADER ---
+# --- HEADER FUNCTION ---
 def render_header():
     if os.path.exists("logo.png"):
         c1, c2, c3 = st.columns([1, 2, 1])
@@ -251,20 +292,16 @@ def render_header():
 # --- HELPER: USER NAME ---
 def get_user_name():
     if st.session_state["user"]:
-        # 1. Try metadata (fastest)
         meta = st.session_state["user"].user_metadata
         if meta and "full_name" in meta:
             return meta["full_name"]
         
-        # 2. Try DB Query (slower but accurate if updated separately)
         try:
             res = supabase.table("profiles").select("full_name").eq("id", st.session_state["user"].id).execute()
             if res.data and res.data[0]['full_name']:
                 return res.data[0]['full_name']
         except:
             pass
-            
-        # 3. Fallback to email
         return st.session_state["user"].email.split("@")[0]
     return ""
 
@@ -306,6 +343,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         pills_opts = [T("pill_1m"), T("pill_2m"), T("pill_3m"), T("pill_1y")]
         dur = st.pills(T("label_validity"), pills_opts, default=T("pill_1y"))
         
+        # VALIDATION / CRASH FIX
         if dur:
             val = int(dur.split()[0])
             days = val * 30 if "Ay" in dur or "Mo" in dur else val * 365
@@ -341,7 +379,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# 2. Onboarding Dialog (Name & Password)
+# 2. Onboarding Dialog
 @st.dialog("Dialog2")
 def onboarding_dialog():
     st.markdown(f"### {T('setup_title')}")
@@ -353,12 +391,10 @@ def onboarding_dialog():
     if st.button(T('save_setup'), type="primary"):
         if name and new_pass:
             try:
-                # 1. Update Password
                 supabase.auth.update_user({
                     "password": new_pass,
                     "data": {"full_name": name}
                 })
-                # 2. Update Profile Table (For Robot)
                 uid = st.session_state["user"].id
                 email = st.session_state["user"].email
                 supabase.table("profiles").upsert({
@@ -377,7 +413,6 @@ def onboarding_dialog():
             st.warning(T('fill_all'))
 
 # --- AUTH LOGIC ---
-# Callback for OTP to fix double-click issue
 def verify_otp_callback():
     code_input = st.session_state.get("otp_code_input", "").strip()
     if code_input:
@@ -389,8 +424,7 @@ def verify_otp_callback():
             })
             st.session_state["user"] = res.user
             st.session_state["otp_sent"] = False
-            # Trigger onboarding for new users or password resets
-            st.session_state["show_onboarding"] = True
+            st.session_state["show_onboarding"] = True # Trigger onboarding
         except Exception as e:
             st.error(T("error_code"))
 
@@ -427,7 +461,6 @@ if st.session_state["user"] is None:
                 st.session_state.lang = l_sel
                 st.rerun()
 
-        # TWO TABS: LOGIN & OTP
         tab1, tab2 = st.tabs([T("login_tab"), T("otp_tab")])
         
         with tab1:
@@ -442,7 +475,6 @@ if st.session_state["user"] is None:
         with tab2:
             st.markdown(f"### {T('otp_header')}")
             
-            # Step 1: Send Code
             if not st.session_state["otp_sent"]:
                 with st.form("otp_send"):
                     otp_e = st.text_input(T("email_label"))
@@ -453,15 +485,9 @@ if st.session_state["user"] is None:
                             st.session_state["otp_email_cache"] = otp_e
                             st.rerun()
                         except Exception as e: st.error(str(e))
-            
-            # Step 2: Verify Code
             else:
                 st.success(f"{T('code_sent')} {st.session_state['otp_email_cache']}")
-                
-                # Input Key is tied to Session State for Callback
                 st.text_input(T("enter_code"), key="otp_code_input")
-                
-                # Button triggers Callback (No Form)
                 st.button(T("verify_btn"), type="primary", on_click=verify_otp_callback)
                 
                 if st.button("Geri / Back", type="secondary"):
@@ -471,7 +497,7 @@ if st.session_state["user"] is None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- ONBOARDING DIALOG CHECK ---
+    # --- ONBOARDING CHECK ---
     if st.session_state.get("show_onboarding"):
         onboarding_dialog()
 
