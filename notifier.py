@@ -27,8 +27,8 @@ def send_alert(to_email, name, pet, vaccine, due_date, days_left):
     pet_clean = clean_text(pet)
     vaccine_clean = clean_text(vaccine)
     
-    # Use Name if available
-    greeting = f"Sayın {name}," if name else "Merhaba,"
+    # Casual Greeting
+    greeting = f"Merhaba {name}," if name else "Merhaba / Hello,"
     
     # Calendar Link
     start = due_date.replace("-","") + "T090000"
@@ -158,7 +158,7 @@ def send_alert(to_email, name, pet, vaccine, due_date, days_left):
             s.login(SMTP_USER, SMTP_PASS)
             s.sendmail(SMTP_USER, to_email, msg.as_string())
             print(f"Sent email to {to_email}")
-        time.sleep(1)
+        time.sleep(1) # Anti-spam buffer
     except Exception as e:
         print(f"Error sending to {to_email}: {e}")
 
