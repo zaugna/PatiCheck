@@ -37,7 +37,8 @@ TRANS = {
     "register_header": {"TR": "Yeni Hesap Oluştur", "EN": "Create New Account"},
     "forgot_header": {"TR": "Şifresiz Giriş / Kurtarma", "EN": "Passwordless Login / Recovery"},
     
-    "name_label": {"TR": "Ad Soyad", "EN": "Full Name"},
+    # CHANGED: "Ad Soyad" -> "İsim"
+    "name_label": {"TR": "İsim", "EN": "Name"},
     "email_label": {"TR": "Email", "EN": "Email"},
     "password_label": {"TR": "Şifre", "EN": "Password"},
     
@@ -52,7 +53,8 @@ TRANS = {
     "error_login": {"TR": "Email veya şifre hatalı.", "EN": "Invalid email or password."},
     "error_code": {"TR": "Hatalı Kod veya Süresi Dolmuş.", "EN": "Invalid or expired code."},
     "email_confirm_error": {"TR": "Lütfen email onaylayın.", "EN": "Please confirm your email."},
-    "success_register": {"TR": "Kayıt başarılı! Lütfen emailinizi onaylayın.", "EN": "Registration successful! Please confirm your email."},
+    "success_register": {"TR": "Kayıt başarılı! Lütfen email kutunuzu kontrol edin.", "EN": "Registration successful! Please check your email."},
+    "fill_all": {"TR": "Lütfen tüm alanları doldurun.", "EN": "Please fill all fields."},
     
     # Navigation
     "nav_home": {"TR": "Ana Sayfa", "EN": "Home"},
@@ -143,7 +145,7 @@ def T(key):
     lang = st.session_state.lang
     return TRANS.get(key, {}).get(lang, key)
 
-# --- CSS ---
+# --- CSS: FIXED BLACKOUT ISSUES ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -178,10 +180,13 @@ st.markdown("""
     div[data-baseweb="tag"][aria-selected="true"] { background-color: #FF6B6B !important; border-color: #FF6B6B !important; }
     div[data-baseweb="tag"][aria-selected="true"] span, div[data-baseweb="tag"][aria-selected="true"] div { color: #FFFFFF !important; }
 
-    /* Dropdowns */
+    /* Dropdowns & Selectbox TEXT COLOR FIX */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0; }
     li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
     li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
+    
+    /* Force text inside the selected box to be dark (Fixes "Blacked Out" issue) */
+    div[data-baseweb="select"] div { color: #1A202C !important; } 
 
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; margin-bottom: 20px; }
@@ -289,7 +294,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     notes = st.text_area(T("label_notes"), height=80, placeholder=T("ph_notes"))
 
     if st.button(T("save_btn"), type="primary"):
-        if not final_pet:
+        if not final_pet_name:
             st.warning(T("warn_name"))
         elif d2 is None:
             st.error(T("warn_date"))
@@ -321,6 +326,24 @@ def get_user_name():
         return st.session_state["user"].email.split("@")[0]
     return ""
 
+# CALLBACK: OTP Verification
+def verify_otp_callback():
+    """Handles OTP logic safely to prevent double-click requirement."""
+    code_input = st.session_state.get("otp_code_input", "").strip()
+    
+    if code_input:
+        try:
+            res = supabase.auth.verify_otp({
+                "email": st.session_state["otp_email_cache"], 
+                "token": code_input, 
+                "type": "magiclink"
+            })
+            st.session_state["user"] = res.user
+            st.session_state["otp_sent"] = False
+            # Rerun handled automatically by script refresh
+        except Exception as e:
+            st.error(T("error_code"))
+
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -351,7 +374,7 @@ def register(email, password, name):
                     "full_name": name
                 }).execute()
             except:
-                pass # Fail silently if profile table has issues
+                pass 
             
             st.success(T("success_register"))
     except Exception as e:
@@ -397,7 +420,7 @@ if st.session_state["user"] is None:
         with tab_reg:
             with st.form("reg_form"):
                 st.markdown(f"### {T('register_header')}")
-                reg_name = st.text_input(T("name_label"))
+                reg_name = st.text_input(T("name_label")) # Changed label
                 reg_email = st.text_input(T("email_label"))
                 reg_pass = st.text_input(T("password_label"), type="password")
                 st.write("")
@@ -405,36 +428,38 @@ if st.session_state["user"] is None:
                     if reg_name and reg_email and reg_pass:
                         register(reg_email, reg_pass, reg_name)
                     else:
-                        st.warning("Lütfen tüm alanları doldurun / Fill all fields")
+                        st.warning(T("fill_all"))
 
         # 3. OTP / FORGOT PASSWORD
         with tab_otp:
             st.markdown(f"### {T('forgot_header')}")
             
-            # Form 1: Send Code
-            with st.form("otp_send_form"):
-                otp_e = st.text_input(T("email_label"))
-                if st.form_submit_button(T("send_code")):
-                    try:
-                        supabase.auth.sign_in_with_otp({"email": otp_e})
-                        st.session_state["otp_sent"] = True
-                        st.session_state["otp_email_cache"] = otp_e
-                        st.success(f"{T('code_sent')} {otp_e}")
-                    except Exception as e: st.error(str(e))
-            
-            # Form 2: Verify Code (Only shows after sending)
-            if st.session_state["otp_sent"]:
-                with st.form("otp_verify_form"):
-                    code = st.text_input(T("enter_code"))
-                    if st.form_submit_button(T("verify_btn")):
+            # Phase 1: Send Code
+            if not st.session_state["otp_sent"]:
+                with st.form("otp_send_form"):
+                    otp_e = st.text_input(T("email_label"))
+                    if st.form_submit_button(T("send_code")):
                         try:
-                            clean_code = code.strip()
-                            # Use session cache to ensure email match
-                            res = supabase.auth.verify_otp({"email": st.session_state["otp_email_cache"], "token": clean_code, "type": "magiclink"})
-                            st.session_state["user"] = res.user
-                            st.session_state["otp_sent"] = False
+                            supabase.auth.sign_in_with_otp({"email": otp_e})
+                            st.session_state["otp_sent"] = True
+                            st.session_state["otp_email_cache"] = otp_e
                             st.rerun()
-                        except: st.error(T("error_code"))
+                        except Exception as e: st.error(str(e))
+            
+            # Phase 2: Verify Code (Callback Method)
+            else:
+                st.success(f"{T('code_sent')} {st.session_state['otp_email_cache']}")
+                
+                # Input linked to session_state directly via 'key'
+                st.text_input(T("enter_code"), key="otp_code_input")
+                
+                # Button triggers callback
+                st.button(T("verify_btn"), type="primary", on_click=verify_otp_callback)
+                
+                # Allow reset
+                if st.button("Geri Dön / Back", type="secondary"):
+                    st.session_state["otp_sent"] = False
+                    st.rerun()
 
         st.markdown('</div>', unsafe_allow_html=True)
 
