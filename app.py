@@ -30,20 +30,29 @@ TRANS = {
     # Auth & General
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
     "login_tab": {"TR": "Giriş Yap", "EN": "Login"},
-    "code_tab": {"TR": "Kod ile Gir", "EN": "Enter w/ Code"},
+    "register_tab": {"TR": "Kayıt Ol", "EN": "Register"},
+    "forgot_tab": {"TR": "Şifremi Unuttum", "EN": "Forgot Password"},
+    
     "welcome_header": {"TR": "Hoşgeldiniz", "EN": "Welcome"},
+    "register_header": {"TR": "Yeni Hesap Oluştur", "EN": "Create New Account"},
+    "forgot_header": {"TR": "Şifresiz Giriş / Kurtarma", "EN": "Passwordless Login / Recovery"},
+    
+    "name_label": {"TR": "Ad Soyad", "EN": "Full Name"},
     "email_label": {"TR": "Email", "EN": "Email"},
     "password_label": {"TR": "Şifre", "EN": "Password"},
+    
     "login_btn": {"TR": "Giriş Yap", "EN": "Login"},
-    "no_account": {"TR": "Hesabınız yoksa 'Kod ile Gir' sekmesinden kayıt olun.", "EN": "No account? Sign up via 'Enter w/ Code' tab."},
-    "quick_login": {"TR": "Hızlı Giriş", "EN": "Quick Login"},
+    "register_btn": {"TR": "Kayıt Ol", "EN": "Sign Up"},
     "send_code": {"TR": "Kod Gönder", "EN": "Send Code"},
-    "verify_btn": {"TR": "Doğrula", "EN": "Verify"},
-    "code_sent": {"TR": "Kod gönderildi:", "EN": "Code sent to:"},
+    "verify_btn": {"TR": "Doğrula ve Gir", "EN": "Verify & Login"},
+    
+    "code_sent": {"TR": "Kod şu adrese gönderildi:", "EN": "Code sent to:"},
     "enter_code": {"TR": "6 Haneli Kod", "EN": "6 Digit Code"},
+    
     "error_login": {"TR": "Email veya şifre hatalı.", "EN": "Invalid email or password."},
-    "error_code": {"TR": "Hatalı Kod", "EN": "Invalid Code"},
+    "error_code": {"TR": "Hatalı Kod veya Süresi Dolmuş.", "EN": "Invalid or expired code."},
     "email_confirm_error": {"TR": "Lütfen email onaylayın.", "EN": "Please confirm your email."},
+    "success_register": {"TR": "Kayıt başarılı! Lütfen emailinizi onaylayın.", "EN": "Registration successful! Please confirm your email."},
     
     # Navigation
     "nav_home": {"TR": "Ana Sayfa", "EN": "Home"},
@@ -59,9 +68,9 @@ TRANS = {
     "metric_overdue": {"TR": "Gecikmiş", "EN": "Overdue"},
     "urgent_header": {"TR": "🚨 ACİL DURUMLAR", "EN": "🚨 URGENT ALERTS"},
     "days_passed": {"TR": "GÜN GEÇTİ", "EN": "DAYS AGO"},
-    "day_passed": {"TR": "GÜN GEÇTİ", "EN": "DAY AGO"}, # Singular
+    "day_passed": {"TR": "GÜN GEÇTİ", "EN": "DAY AGO"}, 
     "days_left": {"TR": "GÜN KALDI", "EN": "DAYS LEFT"},
-    "day_left": {"TR": "GÜN KALDI", "EN": "DAY LEFT"}, # Singular
+    "day_left": {"TR": "GÜN KALDI", "EN": "DAY LEFT"}, 
     "days_ok": {"TR": "GÜN VAR", "EN": "DAYS LEFT"},
     "no_urgent": {"TR": "Harika! Önümüzdeki 7 gün içinde acil bir durum yok.", "EN": "Great! No urgent items in the next 7 days."},
     
@@ -214,15 +223,13 @@ if not supabase:
     st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
 
-# --- HEADER FUNCTION (Branding) ---
+# --- HEADER FUNCTION ---
 def render_header():
-    # Logo Logic: Checks for 'logo.png' in the root folder
     if os.path.exists("logo.png"):
         c1, c2, c3 = st.columns([1, 2, 1])
         with c2:
             st.image("logo.png", use_container_width=True)
     
-    # Rebranded Title
     st.markdown("""
         <h1 style='text-align: center; color: #1A202C !important; font-size: 3.5rem; letter-spacing: -2px; margin-bottom: 0;'>
             Pati<span style='color:#FF6B6B'>*</span>Check
@@ -235,7 +242,7 @@ def render_header():
 # --- DIALOGS ---
 @st.dialog("Dialog") 
 def add_vaccine_dialog(existing_pets, default_pet=None):
-    st.markdown(f"### {T('dialog_title')}") 
+    st.markdown(f"### {T('dialog_title')}")
     
     index = 0
     if default_pet and default_pet in existing_pets:
@@ -252,7 +259,6 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
 
     c1, c2 = st.columns(2)
     with c1:
-        # Translated Vaccine Options
         vac_opts = [
             T("vac_karma"), T("vac_rabies"), T("vac_leukemia"), 
             T("vac_internal"), T("vac_external"), T("vac_kc"), 
@@ -283,7 +289,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     notes = st.text_area(T("label_notes"), height=80, placeholder=T("ph_notes"))
 
     if st.button(T("save_btn"), type="primary"):
-        if not final_pet_name:
+        if not final_pet:
             st.warning(T("warn_name"))
         elif d2 is None:
             st.error(T("warn_date"))
@@ -305,7 +311,16 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# --- AUTH ---
+# --- AUTH FUNCTIONS ---
+def get_user_name():
+    """Tries to get the name from metadata, falls back to email."""
+    if st.session_state["user"]:
+        meta = st.session_state["user"].user_metadata
+        if meta and "full_name" in meta:
+            return meta["full_name"]
+        return st.session_state["user"].email.split("@")[0]
+    return ""
+
 def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -316,6 +331,32 @@ def login(email, password):
         if "Email not confirmed" in msg: st.error(T("email_confirm_error"))
         else: st.error(T("error_login"))
 
+def register(email, password, name):
+    try:
+        # 1. Sign Up with Metadata
+        res = supabase.auth.sign_up({
+            "email": email, 
+            "password": password,
+            "options": {
+                "data": {"full_name": name}
+            }
+        })
+        
+        # 2. Insert into Profiles (for Robot access)
+        if res.user:
+            try:
+                supabase.table("profiles").upsert({
+                    "id": res.user.id,
+                    "email": email,
+                    "full_name": name
+                }).execute()
+            except:
+                pass # Fail silently if profile table has issues
+            
+            st.success(T("success_register"))
+    except Exception as e:
+        st.error(str(e))
+
 def logout():
     supabase.auth.sign_out()
     st.session_state["user"] = None
@@ -324,7 +365,7 @@ def logout():
 # --- ENTRY ---
 if st.session_state["user"] is None:
     st.markdown("<br>", unsafe_allow_html=True)
-    render_header() # New Header with Logo Support
+    render_header()
     
     st.markdown(f"<p style='text-align: center; color: #718096 !important; font-size: 1.2rem; margin-top: -10px;'>{T('app_slogan')}</p>", unsafe_allow_html=True)
     st.write("")
@@ -339,9 +380,11 @@ if st.session_state["user"] is None:
                 st.session_state.lang = l_sel
                 st.rerun()
 
-        tab1, tab2 = st.tabs([T("login_tab"), T("code_tab")])
+        # NEW TABS STRUCTURE
+        tab_login, tab_reg, tab_otp = st.tabs([T("login_tab"), T("register_tab"), T("forgot_tab")])
         
-        with tab1:
+        # 1. LOGIN
+        with tab_login:
             with st.form("login_form"):
                 st.markdown(f"### {T('welcome_header')}")
                 email = st.text_input(T("email_label"))
@@ -349,36 +392,55 @@ if st.session_state["user"] is None:
                 st.write("")
                 if st.form_submit_button(T("login_btn"), type="primary"):
                     login(email, password)
-            st.markdown(f"<p style='text-align:center; font-size:12px; margin-top:10px;'>{T('no_account')}</p>", unsafe_allow_html=True)
 
-        with tab2:
-            st.markdown(f"### {T('quick_login')}")
-            otp_e = st.text_input(T("email_label"), key="otp_e")
+        # 2. REGISTER (NEW)
+        with tab_reg:
+            with st.form("reg_form"):
+                st.markdown(f"### {T('register_header')}")
+                reg_name = st.text_input(T("name_label"))
+                reg_email = st.text_input(T("email_label"))
+                reg_pass = st.text_input(T("password_label"), type="password")
+                st.write("")
+                if st.form_submit_button(T("register_btn"), type="primary"):
+                    if reg_name and reg_email and reg_pass:
+                        register(reg_email, reg_pass, reg_name)
+                    else:
+                        st.warning("Lütfen tüm alanları doldurun / Fill all fields")
+
+        # 3. OTP / FORGOT PASSWORD
+        with tab_otp:
+            st.markdown(f"### {T('forgot_header')}")
             
-            if not st.session_state["otp_sent"]:
-                if st.button(T("send_code")):
+            # Form 1: Send Code
+            with st.form("otp_send_form"):
+                otp_e = st.text_input(T("email_label"))
+                if st.form_submit_button(T("send_code")):
                     try:
                         supabase.auth.sign_in_with_otp({"email": otp_e})
                         st.session_state["otp_sent"] = True
                         st.session_state["otp_email_cache"] = otp_e
-                        st.rerun()
+                        st.success(f"{T('code_sent')} {otp_e}")
                     except Exception as e: st.error(str(e))
-            else:
-                st.success(f"{T('code_sent')} {st.session_state['otp_email_cache']}")
-                code = st.text_input(T("enter_code"))
-                if st.button(T("verify_btn")):
-                    try:
-                        clean_code = code.strip()
-                        res = supabase.auth.verify_otp({"email": st.session_state["otp_email_cache"], "token": clean_code, "type": "magiclink"})
-                        st.session_state["user"] = res.user
-                        st.session_state["otp_sent"] = False
-                        st.rerun()
-                    except: st.error(T("error_code"))
+            
+            # Form 2: Verify Code (Only shows after sending)
+            if st.session_state["otp_sent"]:
+                with st.form("otp_verify_form"):
+                    code = st.text_input(T("enter_code"))
+                    if st.form_submit_button(T("verify_btn")):
+                        try:
+                            clean_code = code.strip()
+                            # Use session cache to ensure email match
+                            res = supabase.auth.verify_otp({"email": st.session_state["otp_email_cache"], "token": clean_code, "type": "magiclink"})
+                            st.session_state["user"] = res.user
+                            st.session_state["otp_sent"] = False
+                            st.rerun()
+                        except: st.error(T("error_code"))
+
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     # --- HEADER & NAVIGATION ---
-    render_header() # New Header
+    render_header()
     
     selected = option_menu(
         menu_title=None,
@@ -399,7 +461,9 @@ else:
     # --- HOME ---
     if selected == T("nav_home"):
         c1, c2 = st.columns([2.5, 1.2])
-        c1.subheader(T("hello"))
+        # PERSONALIZED HEADER
+        user_name = get_user_name()
+        c1.subheader(f"{T('hello')} {user_name}")
         
         if c2.button(T("add_main_btn"), type="primary"):
             existing = list(df["pet_name"].unique()) if not df.empty else []
@@ -437,12 +501,10 @@ else:
                     days = (row['next_due_date'] - today).days
                     if days < 0:
                         colors = ("#FFF5F5", "#C53030")
-                        # Fix Pluralization for Past
                         suffix = T("day_passed") if abs(days) == 1 else T("days_passed")
                         msg = f"{abs(days)} {suffix}"
                     elif days <= 3:
                         colors = ("#FFFAF0", "#C05621")
-                        # Fix Pluralization for Future
                         suffix = T("day_left") if days == 1 else T("days_left")
                         msg = f"{days} {suffix}"
                     else:
