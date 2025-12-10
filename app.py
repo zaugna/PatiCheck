@@ -21,7 +21,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- TRANSLATION ENGINE (The "Brain") ---
+# --- TRANSLATION ENGINE ---
 if 'lang' not in st.session_state:
     st.session_state.lang = 'TR'
 
@@ -192,6 +192,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- STATE INITIALIZATION (RESTORED) ---
+if "user" not in st.session_state: st.session_state["user"] = None
+if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
+if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
+
 if not supabase:
     st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
@@ -274,7 +279,7 @@ def login(email, password):
         st.rerun()
     except Exception as e:
         msg = str(e)
-        if "Email not confirmed" in msg: st.error(T("email_confirm_error"))
+        if "Email not confirmed" in msg: st.error("Email not confirmed")
         else: st.error(T("error_login"))
 
 def logout():
