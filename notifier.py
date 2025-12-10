@@ -32,13 +32,23 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
     end = due_date.replace("-","") + "T091500"
     gcal_link = f"https://www.google.com/calendar/render?action=TEMPLATE&text={pet_clean}-{vaccine_clean}&dates={start}/{end}&details=PatiCheck&sf=true&output=xml"
     
-    # --- DUAL LANGUAGE LOGIC ---
+    # --- SUBJECT LINE LOGIC ---
+    # Strictly based on user request: "Pati Check / [Yaklaşan/Geciken] Aşı Hatırlatması"
+    if days_left < 0:
+        subject_status = "Geciken"
+    else:
+        subject_status = "Yaklaşan"
+        
+    subject_line = f"Pati Check / {subject_status} Aşı Hatırlatması"
+
+    # --- BODY DESIGN LOGIC ---
     if days_left < 0:
         # OVERDUE
-        urgency = "🚨"
-        subject_prefix = "GECİKTİ / OVERDUE"
         color = "#D93025" # Google Red
         bg_color = "#FCE8E6"
+        
+        header_tr = "GECİKTİ"
+        header_en = "OVERDUE"
         
         status_tr = f"{abs(days_left)} gün geçti"
         status_en = f"{abs(days_left)} days overdue"
@@ -48,10 +58,11 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
         
     elif days_left == 0:
         # TODAY
-        urgency = "⭐"
-        subject_prefix = "BUGÜN / TODAY"
         color = "#F9AB00" # Google Orange
         bg_color = "#FEF7E0"
+        
+        header_tr = "BUGÜN"
+        header_en = "TODAY"
         
         status_tr = "Bugün Yapılmalı"
         status_en = "Due Today"
@@ -61,10 +72,11 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
         
     elif days_left <= 3:
         # URGENT UPCOMING
-        urgency = "⚠️"
-        subject_prefix = "AZ KALDI / SOON"
         color = "#E37400" # Dark Orange
         bg_color = "#FFF3E0"
+        
+        header_tr = "AZ KALDI"
+        header_en = "SOON"
         
         status_tr = f"{days_left} gün kaldı"
         status_en = f"{days_left} days left"
@@ -74,10 +86,11 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
         
     else:
         # STANDARD REMINDER
-        urgency = "📅"
-        subject_prefix = "HATIRLATMA / REMINDER"
         color = "#188038" # Google Green
         bg_color = "#E6F4EA"
+        
+        header_tr = "HATIRLATMA"
+        header_en = "REMINDER"
         
         status_tr = f"{days_left} gün kaldı"
         status_en = f"{days_left} days left"
@@ -87,12 +100,11 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
 
     # Email Content
     msg = MIMEMultipart()
-    # RESTORED SUBJECT LINE: Status First
-    msg['Subject'] = f"{urgency} {subject_prefix}: {pet_clean} - {vaccine_clean}"
+    msg['Subject'] = subject_line
     msg['From'] = f"PatiCheck <{SMTP_USER}>"
     msg['To'] = to_email
     
-    # HTML DESIGN (Retaining the High-Contrast Hierarchy)
+    # HTML DESIGN
     html = f"""
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; color: #333;">
         
@@ -106,7 +118,7 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
             
             <div style="background-color: {color}; padding: 15px; text-align: center; color: white;">
                 <h3 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 1px;">
-                    {subject_prefix}
+                    {header_tr} <span style="font-weight: 300; opacity: 0.8;">| {header_en}</span>
                 </h3>
             </div>
 
