@@ -32,16 +32,7 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
     end = due_date.replace("-","") + "T091500"
     gcal_link = f"https://www.google.com/calendar/render?action=TEMPLATE&text={pet_clean}-{vaccine_clean}&dates={start}/{end}&details=PatiCheck&sf=true&output=xml"
     
-    # --- SUBJECT LINE LOGIC ---
-    # Strictly based on user request: "Pati Check / [Yaklaşan/Geciken] Aşı Hatırlatması"
-    if days_left < 0:
-        subject_status = "Geciken"
-    else:
-        subject_status = "Yaklaşan"
-        
-    subject_line = f"Pati Check / {subject_status} Aşı Hatırlatması"
-
-    # --- BODY DESIGN LOGIC ---
+    # --- BODY DESIGN LOGIC (Urgency Colors) ---
     if days_left < 0:
         # OVERDUE
         color = "#D93025" # Google Red
@@ -100,7 +91,10 @@ def send_alert(to_email, pet, vaccine, due_date, days_left):
 
     # Email Content
     msg = MIMEMultipart()
-    msg['Subject'] = subject_line
+    
+    # --- STATIC SUBJECT LINE (Requested) ---
+    msg['Subject'] = "PatiCheck / Asi Hatırlatmasi / Vaccination Reminder"
+    
     msg['From'] = f"PatiCheck <{SMTP_USER}>"
     msg['To'] = to_email
     
