@@ -27,34 +27,34 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'TR'
 
 TRANS = {
-    # Auth & General
+    # Auth
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
     "login_tab": {"TR": "Giriş Yap", "EN": "Login"},
-    "register_tab": {"TR": "Kayıt Ol", "EN": "Register"},
-    "forgot_tab": {"TR": "Şifremi Unuttum", "EN": "Forgot Password"},
+    "otp_tab": {"TR": "Kayıt / Şifremi Unuttum", "EN": "Register / Forgot Password"},
     
     "welcome_header": {"TR": "Hoşgeldiniz", "EN": "Welcome"},
-    "register_header": {"TR": "Yeni Hesap Oluştur", "EN": "Create New Account"},
-    "forgot_header": {"TR": "Şifresiz Giriş / Kurtarma", "EN": "Passwordless Login / Recovery"},
+    "otp_header": {"TR": "Tek Kullanımlık Kod ile Giriş", "EN": "Login with One-Time Code"},
     
-    # CHANGED: "Ad Soyad" -> "İsim"
-    "name_label": {"TR": "İsim", "EN": "Name"},
     "email_label": {"TR": "Email", "EN": "Email"},
     "password_label": {"TR": "Şifre", "EN": "Password"},
-    
     "login_btn": {"TR": "Giriş Yap", "EN": "Login"},
-    "register_btn": {"TR": "Kayıt Ol", "EN": "Sign Up"},
     "send_code": {"TR": "Kod Gönder", "EN": "Send Code"},
-    "verify_btn": {"TR": "Doğrula ve Gir", "EN": "Verify & Login"},
-    
-    "code_sent": {"TR": "Kod şu adrese gönderildi:", "EN": "Code sent to:"},
+    "verify_btn": {"TR": "Doğrula", "EN": "Verify"},
+    "code_sent": {"TR": "Kod gönderildi:", "EN": "Code sent to:"},
     "enter_code": {"TR": "6 Haneli Kod", "EN": "6 Digit Code"},
     
+    # Onboarding Dialog
+    "setup_title": {"TR": "Hesap Kurulumu", "EN": "Account Setup"},
+    "setup_intro": {"TR": "Giriş başarılı! Lütfen isminizi ve kalıcı şifrenizi belirleyin.", "EN": "Login successful! Please set your name and permanent password."},
+    "label_name": {"TR": "İsim", "EN": "Name"},
+    "label_new_pass": {"TR": "Yeni Şifre", "EN": "New Password"},
+    "save_setup": {"TR": "Kaydet ve Başla", "EN": "Save & Start"},
+    
+    # Errors/Success
     "error_login": {"TR": "Email veya şifre hatalı.", "EN": "Invalid email or password."},
-    "error_code": {"TR": "Hatalı Kod veya Süresi Dolmuş.", "EN": "Invalid or expired code."},
+    "error_code": {"TR": "Hatalı Kod.", "EN": "Invalid Code."},
     "email_confirm_error": {"TR": "Lütfen email onaylayın.", "EN": "Please confirm your email."},
-    "success_register": {"TR": "Kayıt başarılı! Lütfen email kutunuzu kontrol edin.", "EN": "Registration successful! Please check your email."},
-    "fill_all": {"TR": "Lütfen tüm alanları doldurun.", "EN": "Please fill all fields."},
+    "success_setup": {"TR": "Hesap oluşturuldu!", "EN": "Account setup complete!"},
     
     # Navigation
     "nav_home": {"TR": "Ana Sayfa", "EN": "Home"},
@@ -70,13 +70,13 @@ TRANS = {
     "metric_overdue": {"TR": "Gecikmiş", "EN": "Overdue"},
     "urgent_header": {"TR": "🚨 ACİL DURUMLAR", "EN": "🚨 URGENT ALERTS"},
     "days_passed": {"TR": "GÜN GEÇTİ", "EN": "DAYS AGO"},
-    "day_passed": {"TR": "GÜN GEÇTİ", "EN": "DAY AGO"}, 
+    "day_passed": {"TR": "GÜN GEÇTİ", "EN": "DAY AGO"},
     "days_left": {"TR": "GÜN KALDI", "EN": "DAYS LEFT"},
-    "day_left": {"TR": "GÜN KALDI", "EN": "DAY LEFT"}, 
+    "day_left": {"TR": "GÜN KALDI", "EN": "DAY LEFT"},
     "days_ok": {"TR": "GÜN VAR", "EN": "DAYS LEFT"},
     "no_urgent": {"TR": "Harika! Önümüzdeki 7 gün içinde acil bir durum yok.", "EN": "Great! No urgent items in the next 7 days."},
     
-    # Profiles (Pets)
+    # Profiles
     "add_vac_btn": {"TR": "Aşı Ekle", "EN": "Add Vax"},
     "details_expander": {"TR": "Detayları Göster", "EN": "Show Details"},
     "tab_general": {"TR": "Genel", "EN": "General"},
@@ -92,11 +92,10 @@ TRANS = {
     "logged_in_as": {"TR": "Giriş:", "EN": "Logged in as:"},
     "logout_btn": {"TR": "Çıkış Yap", "EN": "Log Out"},
     "change_pass_exp": {"TR": "Şifre Değiştir", "EN": "Change Password"},
-    "new_pass_label": {"TR": "Yeni Şifre", "EN": "New Password"},
     "update_btn": {"TR": "Güncelle", "EN": "Update"},
     "success_pass": {"TR": "Başarılı!", "EN": "Success!"},
     
-    # Dialog / Form
+    # Dialog
     "dialog_title": {"TR": "💉 Yeni Aşı Kaydı", "EN": "💉 New Vaccine Record"},
     "label_pet": {"TR": "Evcil Hayvan", "EN": "Pet"},
     "opt_new_pet": {"TR": "➕ Yeni Pet Ekle...", "EN": "➕ Add New Pet..."},
@@ -122,7 +121,7 @@ TRANS = {
     "warn_date": {"TR": "Lütfen geçerlilik süresini (veya tarihini) seçin.", "EN": "Please select validity or due date."},
     "success_save": {"TR": "Kaydedildi!", "EN": "Saved!"},
     
-    # Vaccine Types
+    # Vaccines
     "vac_karma": {"TR": "Karma", "EN": "Mixed (Karma)"},
     "vac_rabies": {"TR": "Kuduz", "EN": "Rabies"},
     "vac_leukemia": {"TR": "Lösemi", "EN": "Leukemia"},
@@ -132,7 +131,7 @@ TRANS = {
     "vac_lyme": {"TR": "Lyme", "EN": "Lyme"},
     "vac_checkup": {"TR": "Check-up", "EN": "Check-up"},
     
-    # Table Columns
+    # Columns
     "col_vac": {"TR": "Aşı", "EN": "Vaccine"},
     "col_applied": {"TR": "Yapıldı", "EN": "Applied"},
     "col_due": {"TR": "Bitiş", "EN": "Due"},
@@ -145,7 +144,7 @@ def T(key):
     lang = st.session_state.lang
     return TRANS.get(key, {}).get(lang, key)
 
-# --- CSS: FIXED BLACKOUT ISSUES ---
+# --- CSS: LIGHT MODE & VISIBILITY FIXES ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -180,13 +179,16 @@ st.markdown("""
     div[data-baseweb="tag"][aria-selected="true"] { background-color: #FF6B6B !important; border-color: #FF6B6B !important; }
     div[data-baseweb="tag"][aria-selected="true"] span, div[data-baseweb="tag"][aria-selected="true"] div { color: #FFFFFF !important; }
 
-    /* Dropdowns & Selectbox TEXT COLOR FIX */
+    /* Dropdowns */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0; }
     li[role="option"] { color: #2D3748 !important; background-color: #FFFFFF !important; }
     li[role="option"]:hover { background-color: #FFF5F5 !important; color: #FF6B6B !important; }
     
-    /* Force text inside the selected box to be dark (Fixes "Blacked Out" issue) */
-    div[data-baseweb="select"] div { color: #1A202C !important; } 
+    /* SELECTBOX VISIBILITY FIX (Language Selection) */
+    div[data-baseweb="select"] div {
+        color: #1A202C !important; /* Force Dark Text */
+        background-color: #FFFFFF !important; /* Force White BG */
+    }
 
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; padding-bottom: 15px; margin-bottom: 20px; }
@@ -223,12 +225,14 @@ st.markdown("""
 if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
+# Flag for the onboarding popup
+if "show_onboarding" not in st.session_state: st.session_state["show_onboarding"] = False
 
 if not supabase:
     st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
 
-# --- HEADER FUNCTION ---
+# --- HELPER: HEADER ---
 def render_header():
     if os.path.exists("logo.png"):
         c1, c2, c3 = st.columns([1, 2, 1])
@@ -244,7 +248,28 @@ def render_header():
         </p>
     """, unsafe_allow_html=True)
 
+# --- HELPER: USER NAME ---
+def get_user_name():
+    if st.session_state["user"]:
+        # 1. Try metadata (fastest)
+        meta = st.session_state["user"].user_metadata
+        if meta and "full_name" in meta:
+            return meta["full_name"]
+        
+        # 2. Try DB Query (slower but accurate if updated separately)
+        try:
+            res = supabase.table("profiles").select("full_name").eq("id", st.session_state["user"].id).execute()
+            if res.data and res.data[0]['full_name']:
+                return res.data[0]['full_name']
+        except:
+            pass
+            
+        # 3. Fallback to email
+        return st.session_state["user"].email.split("@")[0]
+    return ""
+
 # --- DIALOGS ---
+# 1. Vaccine Dialog
 @st.dialog("Dialog") 
 def add_vaccine_dialog(existing_pets, default_pet=None):
     st.markdown(f"### {T('dialog_title')}")
@@ -316,21 +341,45 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# --- AUTH FUNCTIONS ---
-def get_user_name():
-    """Tries to get the name from metadata, falls back to email."""
-    if st.session_state["user"]:
-        meta = st.session_state["user"].user_metadata
-        if meta and "full_name" in meta:
-            return meta["full_name"]
-        return st.session_state["user"].email.split("@")[0]
-    return ""
-
-# CALLBACK: OTP Verification
-def verify_otp_callback():
-    """Handles OTP logic safely to prevent double-click requirement."""
-    code_input = st.session_state.get("otp_code_input", "").strip()
+# 2. Onboarding Dialog (Name & Password)
+@st.dialog("Dialog2")
+def onboarding_dialog():
+    st.markdown(f"### {T('setup_title')}")
+    st.write(T('setup_intro'))
     
+    name = st.text_input(T('label_name'))
+    new_pass = st.text_input(T('label_new_pass'), type="password")
+    
+    if st.button(T('save_setup'), type="primary"):
+        if name and new_pass:
+            try:
+                # 1. Update Password
+                supabase.auth.update_user({
+                    "password": new_pass,
+                    "data": {"full_name": name}
+                })
+                # 2. Update Profile Table (For Robot)
+                uid = st.session_state["user"].id
+                email = st.session_state["user"].email
+                supabase.table("profiles").upsert({
+                    "id": uid,
+                    "email": email,
+                    "full_name": name
+                }).execute()
+                
+                st.success(T('success_setup'))
+                st.session_state["show_onboarding"] = False
+                time.sleep(1)
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
+        else:
+            st.warning(T('fill_all'))
+
+# --- AUTH LOGIC ---
+# Callback for OTP to fix double-click issue
+def verify_otp_callback():
+    code_input = st.session_state.get("otp_code_input", "").strip()
     if code_input:
         try:
             res = supabase.auth.verify_otp({
@@ -340,7 +389,8 @@ def verify_otp_callback():
             })
             st.session_state["user"] = res.user
             st.session_state["otp_sent"] = False
-            # Rerun handled automatically by script refresh
+            # Trigger onboarding for new users or password resets
+            st.session_state["show_onboarding"] = True
         except Exception as e:
             st.error(T("error_code"))
 
@@ -353,32 +403,6 @@ def login(email, password):
         msg = str(e)
         if "Email not confirmed" in msg: st.error(T("email_confirm_error"))
         else: st.error(T("error_login"))
-
-def register(email, password, name):
-    try:
-        # 1. Sign Up with Metadata
-        res = supabase.auth.sign_up({
-            "email": email, 
-            "password": password,
-            "options": {
-                "data": {"full_name": name}
-            }
-        })
-        
-        # 2. Insert into Profiles (for Robot access)
-        if res.user:
-            try:
-                supabase.table("profiles").upsert({
-                    "id": res.user.id,
-                    "email": email,
-                    "full_name": name
-                }).execute()
-            except:
-                pass 
-            
-            st.success(T("success_register"))
-    except Exception as e:
-        st.error(str(e))
 
 def logout():
     supabase.auth.sign_out()
@@ -403,11 +427,10 @@ if st.session_state["user"] is None:
                 st.session_state.lang = l_sel
                 st.rerun()
 
-        # NEW TABS STRUCTURE
-        tab_login, tab_reg, tab_otp = st.tabs([T("login_tab"), T("register_tab"), T("forgot_tab")])
+        # TWO TABS: LOGIN & OTP
+        tab1, tab2 = st.tabs([T("login_tab"), T("otp_tab")])
         
-        # 1. LOGIN
-        with tab_login:
+        with tab1:
             with st.form("login_form"):
                 st.markdown(f"### {T('welcome_header')}")
                 email = st.text_input(T("email_label"))
@@ -416,27 +439,12 @@ if st.session_state["user"] is None:
                 if st.form_submit_button(T("login_btn"), type="primary"):
                     login(email, password)
 
-        # 2. REGISTER (NEW)
-        with tab_reg:
-            with st.form("reg_form"):
-                st.markdown(f"### {T('register_header')}")
-                reg_name = st.text_input(T("name_label")) # Changed label
-                reg_email = st.text_input(T("email_label"))
-                reg_pass = st.text_input(T("password_label"), type="password")
-                st.write("")
-                if st.form_submit_button(T("register_btn"), type="primary"):
-                    if reg_name and reg_email and reg_pass:
-                        register(reg_email, reg_pass, reg_name)
-                    else:
-                        st.warning(T("fill_all"))
-
-        # 3. OTP / FORGOT PASSWORD
-        with tab_otp:
-            st.markdown(f"### {T('forgot_header')}")
+        with tab2:
+            st.markdown(f"### {T('otp_header')}")
             
-            # Phase 1: Send Code
+            # Step 1: Send Code
             if not st.session_state["otp_sent"]:
-                with st.form("otp_send_form"):
+                with st.form("otp_send"):
                     otp_e = st.text_input(T("email_label"))
                     if st.form_submit_button(T("send_code")):
                         try:
@@ -446,24 +454,27 @@ if st.session_state["user"] is None:
                             st.rerun()
                         except Exception as e: st.error(str(e))
             
-            # Phase 2: Verify Code (Callback Method)
+            # Step 2: Verify Code
             else:
                 st.success(f"{T('code_sent')} {st.session_state['otp_email_cache']}")
                 
-                # Input linked to session_state directly via 'key'
+                # Input Key is tied to Session State for Callback
                 st.text_input(T("enter_code"), key="otp_code_input")
                 
-                # Button triggers callback
+                # Button triggers Callback (No Form)
                 st.button(T("verify_btn"), type="primary", on_click=verify_otp_callback)
                 
-                # Allow reset
-                if st.button("Geri Dön / Back", type="secondary"):
+                if st.button("Geri / Back", type="secondary"):
                     st.session_state["otp_sent"] = False
                     st.rerun()
 
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
+    # --- ONBOARDING DIALOG CHECK ---
+    if st.session_state.get("show_onboarding"):
+        onboarding_dialog()
+
     # --- HEADER & NAVIGATION ---
     render_header()
     
@@ -486,7 +497,6 @@ else:
     # --- HOME ---
     if selected == T("nav_home"):
         c1, c2 = st.columns([2.5, 1.2])
-        # PERSONALIZED HEADER
         user_name = get_user_name()
         c1.subheader(f"{T('hello')} {user_name}")
         
