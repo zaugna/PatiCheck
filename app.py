@@ -33,8 +33,10 @@ TRANS = {
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
     "login_tab": {"TR": "Giriş Yap", "EN": "Login"},
     "otp_tab": {"TR": "Kayıt / Şifremi Unuttum", "EN": "Register / Forgot Password"},
+    
     "welcome_header": {"TR": "Hoşgeldiniz", "EN": "Welcome"},
     "otp_header": {"TR": "Tek Kullanımlık Kod ile Giriş", "EN": "Login with One-Time Code"},
+    
     "email_label": {"TR": "Email", "EN": "Email"},
     "password_label": {"TR": "Şifre", "EN": "Password"},
     "login_btn": {"TR": "Giriş Yap", "EN": "Login"},
@@ -83,6 +85,7 @@ TRANS = {
     "tab_general": {"TR": "Genel", "EN": "General"},
     "tab_history": {"TR": "Geçmiş", "EN": "History"},
     "tab_chart": {"TR": "Grafik", "EN": "Chart"},
+    "tab_photos": {"TR": "Fotoğraflar", "EN": "Photos"},
     "metric_weight": {"TR": "Kilo", "EN": "Weight"},
     "metric_next": {"TR": "Sıradaki", "EN": "Next"},
     "save_changes": {"TR": "Değişiklikleri Kaydet", "EN": "Save Changes"},
@@ -148,7 +151,7 @@ def T(key):
     lang = st.session_state.lang
     return TRANS.get(key, {}).get(lang, key)
 
-# --- CSS: DIAMOND GRADE FIX ---
+# --- CSS ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -175,14 +178,13 @@ st.markdown("""
     div[data-baseweb="tag"][aria-selected="true"] span { color: #FFFFFF !important; }
     input[type="date"] { color-scheme: light !important; }
 
-    /* BUTTONS - FIXED SEPARATION */
+    /* BUTTONS */
     div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; font-weight: 700; box-shadow: none !important; }
     div.stButton > button:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; background-color: #FFF5F5 !important; }
-    
     div.stButton > button[kind="primary"] { background-color: #FF6B6B !important; color: white !important; border: none !important; box-shadow: 0 4px 6px rgba(255,107,107,0.25) !important; }
     div.stButton > button[kind="primary"]:hover { background-color: #FA5252 !important; transform: scale(1.01); color: white !important; }
 
-    /* STANDARD UI */
+    /* UI ELEMENTS */
     div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; background-color: #FFFFFF; border-radius: 20px; color: #718096; border: 1px solid #E2E8F0; font-weight: 600; flex: 1 1 auto; }
@@ -397,10 +399,8 @@ else:
                             with a2: st.subheader(pet)
                         else: st.subheader(f"🐾 {pet}")
                     if c2.button(T("add_vac_btn"), key=f"btn_{pet}", type="secondary"): add_vaccine_dialog(list(pets), default_pet=pet)
-                    
                     with st.expander(T("details_expander"), expanded=False):
-                        # --- GENEL TAB (Instagram Grid) ---
-                        t1, t2, t3 = st.tabs([T("tab_general"), T("tab_history"), T("tab_chart")])
+                        t1, t2, t3, t4 = st.tabs([T("tab_general"), T("tab_history"), T("tab_chart"), T("tab_photos")])
                         with t1:
                             col_a, col_b = st.columns(2)
                             last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0.0
@@ -409,54 +409,11 @@ else:
                                 nxt = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date").iloc[0]
                                 col_b.metric(T("metric_next"), nxt['vaccine_type'], nxt['next_due_date'].strftime('%d.%m'))
                             else: col_b.metric(T("metric_next"), "-")
-                            
-                            st.write("---")
-                            st.markdown(f"**{T('gallery_header')}**")
-                            
-                            # INSTAGRAM GRID LAYOUT
+                            st.write("---"); st.markdown(f"**{T('gallery_header')}**")
                             if not p_photos.empty:
                                 cols = st.columns(3)
                                 for i, (_, ph) in enumerate(p_photos.iterrows()):
                                     with cols[i % 3]:
                                         st.image(ph["photo_url"], use_container_width=True)
-                                        # Simple delete button under image
                                         if st.button("🗑️", key=f"del_{ph['id']}", help=T("delete_photo")):
-                                            supabase.table("pet_photos").delete().eq("id", ph["id"]).execute()
-                                            st.rerun()
-                            
-                            # Upload Button in General Tab too
-                            if len(p_photos) < 3:
-                                up = st.file_uploader(T("upload_label"), type=['png', 'jpg'], key=f"gal_{pet}")
-                                if up:
-                                    try:
-                                        img = crop_to_square(Image.open(up)); buf = io.BytesIO(); img.save(buf, format="JPEG", quality=80)
-                                        path = f"{st.session_state['user'].id}/{pet}/{int(time.time())}.jpg"
-                                        supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"})
-                                        url = supabase.storage.from_("pet-photos").get_public_url(path)
-                                        supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": pet, "photo_url": url}).execute()
-                                        st.rerun()
-                                    except Exception as e: st.error(str(e))
-
-                        with t2:
-                            edit_df = p_df.copy(); edited = st.data_editor(edit_df, column_config={"id": None, "user_id": None, "created_at": None, "pet_name": None, "vaccine_type": T("col_vac"), "date_applied": st.column_config.DateColumn(T("col_applied"), format="DD.MM.YYYY"), "next_due_date": st.column_config.DateColumn(T("col_due"), format="DD.MM.YYYY"), "weight": st.column_config.NumberColumn(T("col_weight"), format="%.1f"), "notes": T("col_note")}, hide_index=True, use_container_width=True, key=f"editor_{pet}")
-                            if not edited.equals(edit_df):
-                                if st.button(T("save_changes"), key=f"save_{pet}", type="primary"):
-                                    try: recs = edited.to_dict('records'); [r.update({'date_applied': str(r['date_applied']), 'next_due_date': str(r['next_due_date'])}) for r in recs]; supabase.table("vaccinations").upsert(recs).execute(); st.success(T("success_update")); time.sleep(0.5); st.rerun()
-                                    except: st.error("Hata")
-                        with t3:
-                            if len(p_df) > 0:
-                                fig = go.Figure(); fig.add_trace(go.Scatter(x=p_df["date_applied"], y=p_df["weight"], mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'), marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)), fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)')); fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(showgrid=False, showline=False, color="#718096"), yaxis=dict(showgrid=True, gridcolor='#E2E8F0', color="#718096")); st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                st.write("---")
-
-    elif selected == T("nav_settings"):
-        st.title(T("settings_title")); st.write("---")
-        l = st.selectbox("Dil / Language", ["TR", "EN"], index=0 if st.session_state.lang=='TR' else 1)
-        if l != st.session_state.lang: st.session_state.lang = l; st.rerun()
-        st.write(f"{T('logged_in_as')} {st.session_state['user'].email}")
-        if st.button(T("logout_btn"), type="secondary"): logout()
-        st.write("---")
-        with st.expander(T("change_pass_exp")):
-            new_p = st.text_input(T("new_pass_label"), type="password")
-            if st.button(T("update_btn"), type="primary"):
-                try: supabase.auth.update_user({"password": new_p}); st.success(T("success_pass"))
-                except Exception as e: st.error(str(e))
+                                            supabase.table("pet_photos").delete().eq("id",
