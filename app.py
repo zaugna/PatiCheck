@@ -157,7 +157,6 @@ st.markdown("""
 
     div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     
-    /* BUTTONS */
     div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; font-weight: 700; box-shadow: none !important; }
     div.stButton > button:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; background-color: #FFF5F5 !important; }
     div.stButton > button[kind="primary"] { background-color: #FF6B6B !important; color: white !important; border: none !important; box-shadow: 0 4px 6px rgba(255,107,107,0.25) !important; }
@@ -247,8 +246,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         dur = st.pills(T("label_validity"), [T("pill_1m"), T("pill_2m"), T("pill_3m"), T("pill_1y")], default=T("pill_1y"))
         if dur:
             val = int(dur.split()[0])
-            days = val * 30 if "Ay" in dur or "Mo" in dur else val * 365
-            d2 = d1 + timedelta(days=days)
+            d2 = d1 + timedelta(days=(val * 30 if "Ay" in dur or "Mo" in dur else val * 365))
             st.caption(f"{T('caption_next')} {d2.strftime('%d.%m.%Y')}")
         else: st.info(T("warn_date")); d2 = None
     else:
@@ -261,7 +259,6 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         elif d2 is None: st.error(T("warn_date"))
         else:
             try:
-                # 1. Photo Upload (Debounce unnecessary here as dialog closes on save)
                 if photo_file:
                     try:
                         img = crop_to_square(Image.open(photo_file))
@@ -269,13 +266,13 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
                         img.save(buf, format="JPEG", quality=80)
                         path = f"{st.session_state['user'].id}/{final_pet_name}/{int(time.time())}.jpg"
                         supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"})
-                        url = supabase.storage.from_("pet-photos").get_public_url(path)
-                        supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": final_pet_name, "photo_url": url}).execute()
+                        public_url = supabase.storage.from_("pet-photos").get_public_url(path)
+                        supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": final_pet_name, "photo_url": public_url}).execute()
                     except Exception as e: st.error(f"Foto Hatası: {e}")
 
                 supabase.table("vaccinations").insert({"user_id": st.session_state["user"].id, "pet_name": final_pet_name, "vaccine_type": vac, "date_applied": str(d1), "next_due_date": str(d2), "weight": w, "notes": notes}).execute()
                 st.success(T("success_save")); time.sleep(0.5); st.rerun()
-            except Exception as e: st.error(f"Hata: {e}")
+            except Exception as e: st.error(f"Kayıt Hatası: {e}")
 
 @st.dialog("Dialog2")
 def onboarding_dialog():
@@ -388,38 +385,25 @@ else:
                             else: col_b.metric(T("metric_next"), "-")
                             
                             st.write("---")
-                            # HEADER & HINT
                             st.markdown(f"**{T('gallery_header')}** &nbsp;<small style='color:#718096; font-weight:400'>{T('gallery_hint')}</small>", unsafe_allow_html=True)
                             
-                            # DISPLAY GRID
                             if not p_photos.empty:
                                 cols = st.columns(3)
                                 for i, (_, ph) in enumerate(p_photos.iterrows()):
                                     with cols[i % 3]:
                                         st.image(ph["photo_url"], use_container_width=True)
                                         if st.button("🗑️", key=f"del_{ph['id']}", help=T("delete_photo"), type="secondary"):
-                                            supabase.table("pet_photos").delete().eq("id", ph["id"]).execute()
-                                            st.rerun()
+                                            supabase.table("pet_photos").delete().eq("id", ph["id"]).execute(); st.rerun()
                             
-                            # UPLOAD LOGIC (Debounced to prevent Triple Upload)
                             if len(p_photos) < 3:
                                 up = st.file_uploader(T("upload_label"), type=['png', 'jpg'], key=f"gal_{pet}")
                                 if up:
-                                    # Create unique ID for this file upload instance
                                     file_id = f"{pet}_{up.name}_{up.size}"
                                     if file_id not in st.session_state.processed_files:
                                         try:
-                                            img = crop_to_square(Image.open(up))
-                                            buf = io.BytesIO()
-                                            img.save(buf, format="JPEG", quality=80)
-                                            path = f"{st.session_state['user'].id}/{pet}/{int(time.time())}.jpg"
-                                            supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"})
-                                            url = supabase.storage.from_("pet-photos").get_public_url(path)
-                                            supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": pet, "photo_url": url}).execute()
-                                            
-                                            # Mark as processed
-                                            st.session_state.processed_files.append(file_id)
-                                            st.rerun()
+                                            img = crop_to_square(Image.open(up)); buf = io.BytesIO(); img.save(buf, format="JPEG", quality=80); path = f"{st.session_state['user'].id}/{pet}/{int(time.time())}.jpg"
+                                            supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"}); url = supabase.storage.from_("pet-photos").get_public_url(path)
+                                            supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": pet, "photo_url": url}).execute(); st.session_state.processed_files.append(file_id); st.rerun()
                                         except Exception as e: st.error(str(e))
                         with t2:
                             edit_df = p_df.copy(); edited = st.data_editor(edit_df, column_config={"id": None, "user_id": None, "created_at": None, "pet_name": None, "vaccine_type": T("col_vac"), "date_applied": st.column_config.DateColumn(T("col_applied"), format="DD.MM.YYYY"), "next_due_date": st.column_config.DateColumn(T("col_due"), format="DD.MM.YYYY"), "weight": st.column_config.NumberColumn(T("col_weight"), format="%.1f"), "notes": T("col_note")}, hide_index=True, use_container_width=True, key=f"editor_{pet}")
@@ -430,7 +414,9 @@ else:
                         with t3:
                             if len(p_df) > 0:
                                 fig = go.Figure(); fig.add_trace(go.Scatter(x=p_df["date_applied"], y=p_df["weight"], mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'), marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)), fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)')); fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(showgrid=False, showline=False, color="#718096"), yaxis=dict(showgrid=True, gridcolor='#E2E8F0', color="#718096")); st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                st.write("---")
+                
+                # --- VISUAL SEPARATOR BETWEEN PETS ---
+                st.markdown("""<hr style="height:8px; border:none; background-color:#F1F3F5; margin: 40px 0; border-radius: 4px;" />""", unsafe_allow_html=True)
 
     elif selected == T("nav_settings"):
         st.title(T("settings_title")); st.write("---")
