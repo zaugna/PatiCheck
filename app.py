@@ -33,10 +33,8 @@ TRANS = {
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
     "login_tab": {"TR": "Giriş Yap", "EN": "Login"},
     "otp_tab": {"TR": "Kayıt / Şifremi Unuttum", "EN": "Register / Forgot Password"},
-    
     "welcome_header": {"TR": "Hoşgeldiniz", "EN": "Welcome"},
     "otp_header": {"TR": "Tek Kullanımlık Kod ile Giriş", "EN": "Login with One-Time Code"},
-    
     "email_label": {"TR": "Email", "EN": "Email"},
     "password_label": {"TR": "Şifre", "EN": "Password"},
     "login_btn": {"TR": "Giriş Yap", "EN": "Login"},
@@ -85,13 +83,14 @@ TRANS = {
     "tab_general": {"TR": "Genel", "EN": "General"},
     "tab_history": {"TR": "Geçmiş", "EN": "History"},
     "tab_chart": {"TR": "Grafik", "EN": "Chart"},
-    "tab_photos": {"TR": "Fotoğraflar", "EN": "Photos"}, # NEW
+    "tab_photos": {"TR": "Fotoğraflar", "EN": "Photos"},
     "metric_weight": {"TR": "Kilo", "EN": "Weight"},
     "metric_next": {"TR": "Sıradaki", "EN": "Next"},
     "save_changes": {"TR": "Değişiklikleri Kaydet", "EN": "Save Changes"},
     "success_update": {"TR": "Güncellendi!", "EN": "Updated!"},
     "upload_label": {"TR": "Fotoğraf Yükle (Max 3)", "EN": "Upload Photo (Max 3)"},
     "delete_photo": {"TR": "Sil", "EN": "Delete"},
+    "upload_optional": {"TR": "Fotoğraf Ekle (Opsiyonel)", "EN": "Add Photo (Optional)"},
     
     # Settings
     "settings_title": {"TR": "Ayarlar", "EN": "Settings"},
@@ -163,11 +162,41 @@ st.markdown("""
     }
     .stApp { background-color: #F8F9FA !important; }
     
-    /* 2. THE COMPONENT RESCUE */
+    /* 2. BUTTONS - UNIVERSAL FIX */
+    /* All buttons start as White/Grey (Secondary Style) */
+    div.stButton > button {
+        width: 100%;
+        border-radius: 12px;
+        height: 48px;
+        background-color: #FFFFFF !important;
+        color: #2D3748 !important;
+        border: 2px solid #E2E8F0 !important;
+        font-weight: 700;
+        box-shadow: none !important;
+    }
+    div.stButton > button:hover {
+        border-color: #FF6B6B !important;
+        color: #FF6B6B !important;
+        background-color: #FFF5F5 !important;
+    }
+    
+    /* PRIMARY (Red) Override */
+    div.stButton > button[kind="primary"] {
+        background-color: #FF6B6B !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(255,107,107,0.25) !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #FA5252 !important;
+        transform: scale(1.01);
+        color: white !important;
+    }
+
+    /* 3. DIALOG & INPUTS */
     div[data-testid="stDialog"] > div { background-color: #FFFFFF !important; color: #1A202C !important; }
     button[aria-label="Close"] { color: #1A202C !important; background-color: transparent !important; border: none !important; }
     
-    /* Inputs */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
         background-color: #FFFFFF !important; color: #1A202C !important; border: 1px solid #E2E8F0 !important;
     }
@@ -189,14 +218,10 @@ st.markdown("""
     div[data-baseweb="tag"][aria-selected="true"] { background-color: #FF6B6B !important; }
     div[data-baseweb="tag"][aria-selected="true"] span { color: #FFFFFF !important; }
     
-    /* Date Picker */
     input[type="date"] { color-scheme: light !important; }
 
-    /* 3. STANDARD UI ELEMENTS */
+    /* 4. STANDARD UI ELEMENTS */
     div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    
-    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; box-shadow: 0 4px 6px rgba(255,107,107,0.25); }
-    button[kind="secondary"] { background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; box-shadow: none !important; }
     
     .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; background-color: #FFFFFF; border-radius: 20px; color: #718096; border: 1px solid #E2E8F0; font-weight: 600; flex: 1 1 auto; }
@@ -279,6 +304,11 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
     sel = st.selectbox(T("label_pet"), options, index=index)
     final_pet_name = st.text_input(T("label_pet_name"), placeholder=T("ph_pet_name")) if sel == T("opt_new_pet") else sel
 
+    # PHOTO UPLOAD (Only for New Pets or Optional)
+    photo_file = None
+    if sel == T("opt_new_pet"):
+        photo_file = st.file_uploader(T("upload_optional"), type=['png', 'jpg', 'jpeg'])
+
     c1, c2 = st.columns(2)
     with c1:
         vac_opts = [T("vac_karma"), T("vac_rabies"), T("vac_leukemia"), T("vac_internal"), T("vac_external"), T("vac_kc"), T("vac_lyme"), T("vac_checkup")]
@@ -309,6 +339,27 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         elif d2 is None: st.error(T("warn_date"))
         else:
             try:
+                # 1. Handle Photo Upload (If present)
+                if photo_file:
+                    try:
+                        img = Image.open(photo_file)
+                        img = crop_to_square(img)
+                        buf = io.BytesIO()
+                        img.save(buf, format="JPEG", quality=80)
+                        byte_data = buf.getvalue()
+                        path = f"{st.session_state['user'].id}/{final_pet_name}/{int(time.time())}.jpg"
+                        supabase.storage.from_("pet-photos").upload(path, byte_data, {"content-type": "image/jpeg"})
+                        public_url = supabase.storage.from_("pet-photos").get_public_url(path)
+                        
+                        supabase.table("pet_photos").insert({
+                            "user_id": st.session_state['user'].id,
+                            "pet_name": final_pet_name,
+                            "photo_url": public_url
+                        }).execute()
+                    except Exception as e:
+                        st.warning(f"Fotoğraf yüklenemedi: {e}")
+
+                # 2. Save Vaccine
                 data = {"user_id": st.session_state["user"].id, "pet_name": final_pet_name, "vaccine_type": vac, "date_applied": str(d1), "next_due_date": str(d2), "weight": w, "notes": notes}
                 supabase.table("vaccinations").insert(data).execute()
                 st.success(T("success_save"))
@@ -473,10 +524,9 @@ else:
                     with c1:
                         if not p_photos.empty:
                             av_url = p_photos.iloc[0]["photo_url"]
-                            # Use columns to align Avatar + Name
-                            a1, a2 = st.columns([1, 4])
-                            with a1: st.image(av_url, use_container_width=True)
-                            with a2: st.subheader(pet)
+                            a1, a2 = st.columns([1, 3])
+                            with a1: st.image(av_url, width=60) # Small Avatar
+                            with a2: st.subheader(f"🐾 {pet}")
                         else:
                             st.subheader(f"🐾 {pet}")
                     
@@ -521,30 +571,19 @@ else:
                                 up_file = st.file_uploader(T("upload_label"), type=['png', 'jpg', 'jpeg'], key=f"up_{pet}")
                                 if up_file:
                                     try:
-                                        # Crop
                                         img = Image.open(up_file)
                                         img = crop_to_square(img)
-                                        # Save to buffer
                                         buf = io.BytesIO()
                                         img.save(buf, format="JPEG", quality=80)
                                         byte_data = buf.getvalue()
-                                        # Upload
                                         path = f"{st.session_state['user'].id}/{pet}/{int(time.time())}.jpg"
                                         supabase.storage.from_("pet-photos").upload(path, byte_data, {"content-type": "image/jpeg"})
-                                        # Get URL
                                         public_url = supabase.storage.from_("pet-photos").get_public_url(path)
-                                        # DB Insert
-                                        supabase.table("pet_photos").insert({
-                                            "user_id": st.session_state['user'].id,
-                                            "pet_name": pet,
-                                            "photo_url": public_url
-                                        }).execute()
-                                        st.success("Yüklendi / Uploaded!")
-                                        time.sleep(1)
-                                        st.rerun()
+                                        supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": pet, "photo_url": public_url}).execute()
+                                        st.success("Yüklendi!"); time.sleep(1); st.rerun()
                                     except Exception as e: st.error(str(e))
                             else:
-                                st.info("Max 3 photos reached.")
+                                st.info("Max 3 photos.")
                             
                             if not p_photos.empty:
                                 for _, ph in p_photos.iterrows():
