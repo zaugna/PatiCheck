@@ -144,12 +144,12 @@ def T(key):
     lang = st.session_state.lang
     return TRANS.get(key, {}).get(lang, key)
 
-# --- CSS: THE DIAMOND-GRADE FIX ---
+# --- CSS: FIXED BLACKOUT & NAV ISSUES ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. UNIVERSAL FORCE LIGHT */
+    /* 1. UNIVERSAL FORCE LIGHT (Backing up the config.toml) */
     :root { color-scheme: light !important; }
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
@@ -157,113 +157,98 @@ st.markdown("""
         color: #1A202C !important;
     }
     
-    /* 2. INPUTS & SELECTBOXES (The "Black Box" Killer) */
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
-        background-color: #FFFFFF !important;
-        color: #1A202C !important;
-        border: 1px solid #E2E8F0 !important;
+    /* 2. THE BLACK MODAL & DROPDOWN KILLER */
+    div[data-testid="stDialog"] > div { 
+        background-color: #FFFFFF !important; 
+        color: #1A202C !important; 
     }
-    /* Specifically target Selectbox Internal Divs */
-    div[data-baseweb="select"] {
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
     }
     div[data-baseweb="select"] > div {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
-        border-color: #E2E8F0 !important;
-    }
-    /* Selected Value Text Color */
-    div[data-baseweb="select"] span {
-        color: #1A202C !important;
     }
     
-    /* 3. PILLS (VALIDITY BUTTONS) FIX */
-    /* Container */
-    div[data-baseweb="tag"] {
-        background-color: #F1F3F5 !important; /* Light Grey */
+    /* 3. INPUTS & PILLS */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
         border: 1px solid #E2E8F0 !important;
     }
-    /* Text inside Tag */
-    div[data-baseweb="tag"] span {
-        color: #4A5568 !important; /* Dark Grey Text */
+    /* Fix Pills */
+    div[data-baseweb="tag"] {
+        background-color: #F1F3F5 !important;
+        border: 1px solid #E2E8F0 !important;
     }
-    /* SELECTED State */
+    div[data-baseweb="tag"] span {
+        color: #4A5568 !important;
+    }
     div[data-baseweb="tag"][aria-selected="true"] {
-        background-color: #FF6B6B !important; /* Red */
-        border-color: #FF6B6B !important;
+        background-color: #FF6B6B !important;
     }
     div[data-baseweb="tag"][aria-selected="true"] span {
-        color: #FFFFFF !important; /* White Text */
+        color: #FFFFFF !important;
     }
 
-    /* 4. MODAL / DIALOG BACKGROUNDS */
-    div[role="dialog"] {
-        background-color: #FFFFFF !important;
-        color: #1A202C !important;
+    /* 4. TABS */
+    .stTabs [data-baseweb="tab-list"] { 
+        gap: 8px; 
+        border-bottom: none; 
+        padding-bottom: 15px; 
+        margin-bottom: 20px;
     }
-    /* Fix Close X Button */
-    button[aria-label="Close"] {
-        color: #1A202C !important;
-        background-color: transparent !important;
-        border: none !important;
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        background-color: #FFFFFF;
+        border-radius: 20px;
+        color: #718096;
+        border: 1px solid #E2E8F0;
+        font-weight: 600;
+        flex: 1 1 auto;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FF6B6B;
+        color: white !important;
+        border: none;
+        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
     }
     
-    /* 5. NATIVE DATE PICKER & PASSWORDS */
-    input[type="date"] { color-scheme: light !important; }
-    input[type="password"] { background-color: #FFFFFF !important; color: #1A202C !important; }
-
-    /* 6. DROPDOWN MENUS (Popup List) */
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-    }
-    li[role="option"] {
-        color: #2D3748 !important;
-        background-color: #FFFFFF !important;
-    }
-    li[role="option"]:hover {
-        background-color: #FFF5F5 !important;
-        color: #FF6B6B !important;
-    }
-
-    /* 7. STANDARD UI ELEMENTS */
-    div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    /* 5. METRICS & UTILS */
+    [data-testid="stMetricValue"] { color: #1A202C !important; font-weight: 800; }
+    [data-testid="stMetricLabel"] { color: #718096 !important; font-weight: 600; }
     
-    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; box-shadow: 0 4px 6px rgba(255,107,107,0.25); }
-    div.stButton > button:hover { background-color: #FA5252; transform: scale(1.01); }
+    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; }
+    button[kind="secondary"] { background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; }
     
-    button[kind="secondary"] { background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; box-shadow: none !important; }
-    button[kind="secondary"]:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; background-color: #FFF5F5 !important; }
-
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; margin-bottom: 20px; }
-    .stTabs [data-baseweb="tab"] { height: 40px; background-color: #FFFFFF; border-radius: 20px; color: #718096; border: 1px solid #E2E8F0; font-weight: 600; flex: 1 1 auto; }
-    .stTabs [aria-selected="true"] { background-color: #FF6B6B; color: white !important; border: none; }
-    
-    .streamlit-expanderHeader { background-color: #FFFFFF !important; border: 2px solid #E2E8F0 !important; border-radius: 12px !important; color: #1A202C !important; font-weight: 600 !important; }
-    .streamlit-expanderHeader:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; }
-    .streamlit-expanderHeader p { color: inherit !important; }
+    .streamlit-expanderHeader { background-color: #FFFFFF !important; border: 2px solid #E2E8F0 !important; border-radius: 12px !important; color: #1A202C !important; }
     div[data-testid="stExpander"] { border: none; box-shadow: none; }
     
-    [data-testid="stMetricValue"] { color: #1A202C !important; }
-    [data-testid="stMetricLabel"] { color: #718096 !important; }
-    [data-testid="stSidebar"] { display: none; }
-    #MainMenu { display: none; }
-    footer { display: none; }
-    div[data-testid="InputInstructions"] { display: none !important; }
+    [data-testid="stSidebar"], footer, #MainMenu { display: none; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* Mobile Tweaks */
+    /* 6. MOBILE FIXES */
     @media only screen and (max-width: 600px) {
-        .nav-link { font-size: 12px !important; padding: 5px 2px !important; white-space: nowrap !important; }
-        div[data-testid="column"] button { width: 100% !important; margin-top: 10px !important; }
+        /* Force Nav items to single line */
+        .nav-link { 
+            font-size: 11px !important; 
+            padding: 5px 1px !important;
+            white-space: nowrap !important;
+        }
+        /* Buttons full width */
+        div[data-testid="column"] button {
+            width: 100% !important;
+            margin-top: 10px !important;
+        }
+        /* Dialog Width */
         div[role="dialog"] { width: 95vw !important; }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- STATE INITIALIZATION ---
+# --- STATE ---
 if "user" not in st.session_state: st.session_state["user"] = None
 if "otp_sent" not in st.session_state: st.session_state["otp_sent"] = False
 if "otp_email_cache" not in st.session_state: st.session_state["otp_email_cache"] = ""
@@ -273,7 +258,7 @@ if not supabase:
     st.error("Sistem Hatası: Veritabanı bağlantısı kurulamadı.")
     st.stop()
 
-# --- HEADER FUNCTION ---
+# --- HEADER ---
 def render_header():
     if os.path.exists("logo.png"):
         c1, c2, c3 = st.columns([1, 2, 1])
@@ -289,13 +274,12 @@ def render_header():
         </p>
     """, unsafe_allow_html=True)
 
-# --- HELPER: USER NAME ---
+# --- HELPER: NAME ---
 def get_user_name():
     if st.session_state["user"]:
         meta = st.session_state["user"].user_metadata
         if meta and "full_name" in meta:
             return meta["full_name"]
-        
         try:
             res = supabase.table("profiles").select("full_name").eq("id", st.session_state["user"].id).execute()
             if res.data and res.data[0]['full_name']:
@@ -306,7 +290,6 @@ def get_user_name():
     return ""
 
 # --- DIALOGS ---
-# 1. Vaccine Dialog
 @st.dialog("Dialog") 
 def add_vaccine_dialog(existing_pets, default_pet=None):
     st.markdown(f"### {T('dialog_title')}")
@@ -343,14 +326,16 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         pills_opts = [T("pill_1m"), T("pill_2m"), T("pill_3m"), T("pill_1y")]
         dur = st.pills(T("label_validity"), pills_opts, default=T("pill_1y"))
         
-        # VALIDATION / CRASH FIX
+        # CRASH FIX: Check if dur is None
         if dur:
             val = int(dur.split()[0])
             days = val * 30 if "Ay" in dur or "Mo" in dur else val * 365
             d2 = d1 + timedelta(days=days)
             st.caption(f"{T('caption_next')} {d2.strftime('%d.%m.%Y')}")
         else:
+            # Handle empty selection
             st.info(T("warn_date"))
+            d2 = None
     else:
         d2 = st.date_input(T("label_due_date"), value=d1 + timedelta(days=30))
     
@@ -379,7 +364,6 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
-# 2. Onboarding Dialog
 @st.dialog("Dialog2")
 def onboarding_dialog():
     st.markdown(f"### {T('setup_title')}")
@@ -424,7 +408,7 @@ def verify_otp_callback():
             })
             st.session_state["user"] = res.user
             st.session_state["otp_sent"] = False
-            st.session_state["show_onboarding"] = True # Trigger onboarding
+            st.session_state["show_onboarding"] = True
         except Exception as e:
             st.error(T("error_code"))
 
@@ -497,11 +481,9 @@ if st.session_state["user"] is None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- ONBOARDING CHECK ---
     if st.session_state.get("show_onboarding"):
         onboarding_dialog()
 
-    # --- HEADER & NAVIGATION ---
     render_header()
     
     selected = option_menu(
@@ -520,7 +502,6 @@ else:
     rows = supabase.table("vaccinations").select("*").execute().data
     df = pd.DataFrame(rows)
 
-    # --- HOME ---
     if selected == T("nav_home"):
         c1, c2 = st.columns([2.5, 1.2])
         user_name = get_user_name()
@@ -588,7 +569,6 @@ else:
             else:
                 st.success(T("no_urgent"))
 
-    # --- PETS ---
     elif selected == T("nav_profiles"):
         if df.empty:
             st.warning(T("empty_home"))
@@ -677,7 +657,6 @@ else:
                                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                 st.write("---")
 
-    # --- SETTINGS ---
     elif selected == T("nav_settings"):
         st.title(T("settings_title"))
         
