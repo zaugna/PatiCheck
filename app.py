@@ -144,40 +144,68 @@ def T(key):
     lang = st.session_state.lang
     return TRANS.get(key, {}).get(lang, key)
 
-# --- CSS: FIXED BLACKOUT & NAV ISSUES ---
+# --- CSS: THE "DIAMOND-GRADE" FIX ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. UNIVERSAL FORCE LIGHT (Backing up the config.toml) */
+    /* 1. FORCE LIGHT MODE EVERYWHERE */
     :root { color-scheme: light !important; }
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
         background-color: #F8F9FA !important;
         color: #1A202C !important;
     }
+    .stApp { background-color: #F8F9FA !important; }
     
-    /* 2. THE BLACK MODAL & DROPDOWN KILLER */
-    div[data-testid="stDialog"] > div { 
-        background-color: #FFFFFF !important; 
-        color: #1A202C !important; 
-    }
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
-        background-color: #FFFFFF !important;
-        color: #1A202C !important;
-    }
-    div[data-baseweb="select"] > div {
+    /* 2. THE COMPONENT RESCUE (Fixes Black Backgrounds) */
+    
+    /* Modal/Dialog Background */
+    div[data-testid="stDialog"] > div {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
     }
     
-    /* 3. INPUTS & PILLS */
+    /* Inputs */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {
         background-color: #FFFFFF !important;
         color: #1A202C !important;
         border: 1px solid #E2E8F0 !important;
     }
-    /* Fix Pills */
+    input[type="password"] { 
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+        -webkit-text-fill-color: #1A202C !important;
+    }
+    
+    /* Selectboxes - The Deep Drill */
+    div[data-baseweb="select"] {
+        background-color: #FFFFFF !important;
+    }
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        color: #1A202C !important;
+        border-color: #E2E8F0 !important;
+    }
+    /* The text inside the selected box */
+    div[data-baseweb="select"] span {
+        color: #1A202C !important;
+    }
+    /* The dropdown popup list */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    li[role="option"] {
+        color: #2D3748 !important;
+        background-color: #FFFFFF !important;
+    }
+    li[role="option"]:hover {
+        background-color: #FFF5F5 !important;
+        color: #FF6B6B !important;
+    }
+    
+    /* Pills */
     div[data-baseweb="tag"] {
         background-color: #F1F3F5 !important;
         border: 1px solid #E2E8F0 !important;
@@ -192,57 +220,40 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* 4. TABS */
-    .stTabs [data-baseweb="tab-list"] { 
-        gap: 8px; 
-        border-bottom: none; 
-        padding-bottom: 15px; 
-        margin-bottom: 20px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        background-color: #FFFFFF;
-        border-radius: 20px;
-        color: #718096;
-        border: 1px solid #E2E8F0;
-        font-weight: 600;
-        flex: 1 1 auto;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FF6B6B;
-        color: white !important;
-        border: none;
-        box-shadow: 0 4px 6px rgba(255, 107, 107, 0.3);
+    /* Modal Close Button */
+    button[aria-label="Close"] {
+        color: #1A202C !important;
+        background-color: transparent !important;
+        border: none !important;
     }
     
-    /* 5. METRICS & UTILS */
-    [data-testid="stMetricValue"] { color: #1A202C !important; font-weight: 800; }
-    [data-testid="stMetricLabel"] { color: #718096 !important; font-weight: 600; }
+    /* Native Date Picker */
+    input[type="date"] { color-scheme: light !important; }
+
+    /* 3. STANDARD UI ELEMENTS */
+    div.css-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     
-    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; }
-    button[kind="secondary"] { background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; }
+    div.stButton > button { width: 100%; border-radius: 12px; height: 48px; background-color: #FF6B6B; color: white !important; border: none; font-weight: 700; box-shadow: 0 4px 6px rgba(255,107,107,0.25); }
+    button[kind="secondary"] { background-color: #FFFFFF !important; color: #2D3748 !important; border: 2px solid #E2E8F0 !important; box-shadow: none !important; }
+    
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; margin-bottom: 20px; }
+    .stTabs [data-baseweb="tab"] { height: 40px; background-color: #FFFFFF; border-radius: 20px; color: #718096; border: 1px solid #E2E8F0; font-weight: 600; flex: 1 1 auto; }
+    .stTabs [aria-selected="true"] { background-color: #FF6B6B; color: white !important; border: none; }
     
     .streamlit-expanderHeader { background-color: #FFFFFF !important; border: 2px solid #E2E8F0 !important; border-radius: 12px !important; color: #1A202C !important; }
     div[data-testid="stExpander"] { border: none; box-shadow: none; }
     
+    [data-testid="stMetricValue"] { color: #1A202C !important; }
+    [data-testid="stMetricLabel"] { color: #718096 !important; }
     [data-testid="stSidebar"], footer, #MainMenu { display: none; }
+    div[data-testid="InputInstructions"] { display: none !important; }
     .js-plotly-plot .plotly .main-svg { background-color: transparent !important; }
     [data-testid="stDataFrame"] { background-color: white !important; border: 1px solid #E2E8F0; }
 
-    /* 6. MOBILE FIXES */
+    /* Mobile */
     @media only screen and (max-width: 600px) {
-        /* Force Nav items to single line */
-        .nav-link { 
-            font-size: 11px !important; 
-            padding: 5px 1px !important;
-            white-space: nowrap !important;
-        }
-        /* Buttons full width */
-        div[data-testid="column"] button {
-            width: 100% !important;
-            margin-top: 10px !important;
-        }
-        /* Dialog Width */
+        .nav-link { font-size: 12px !important; padding: 5px 2px !important; white-space: nowrap !important; }
+        div[data-testid="column"] button { width: 100% !important; margin-top: 10px !important; }
         div[role="dialog"] { width: 95vw !important; }
     }
 </style>
@@ -326,14 +337,12 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         pills_opts = [T("pill_1m"), T("pill_2m"), T("pill_3m"), T("pill_1y")]
         dur = st.pills(T("label_validity"), pills_opts, default=T("pill_1y"))
         
-        # CRASH FIX: Check if dur is None
         if dur:
             val = int(dur.split()[0])
             days = val * 30 if "Ay" in dur or "Mo" in dur else val * 365
             d2 = d1 + timedelta(days=days)
             st.caption(f"{T('caption_next')} {d2.strftime('%d.%m.%Y')}")
         else:
-            # Handle empty selection
             st.info(T("warn_date"))
             d2 = None
     else:
@@ -364,6 +373,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
             except Exception as e:
                 st.error(f"Hata: {e}")
 
+# 2. Onboarding Dialog
 @st.dialog("Dialog2")
 def onboarding_dialog():
     st.markdown(f"### {T('setup_title')}")
@@ -374,11 +384,17 @@ def onboarding_dialog():
     
     if st.button(T('save_setup'), type="primary"):
         if name and new_pass:
+            # 1. Update Password
             try:
-                supabase.auth.update_user({
-                    "password": new_pass,
-                    "data": {"full_name": name}
-                })
+                supabase.auth.update_user({"password": new_pass})
+            except Exception as e:
+                # If error is "same password", we ignore it and proceed
+                if "same" not in str(e).lower():
+                    st.error(f"Password Error: {e}")
+                    return
+
+            # 2. Update Profile Name
+            try:
                 uid = st.session_state["user"].id
                 email = st.session_state["user"].email
                 supabase.table("profiles").upsert({
@@ -387,12 +403,17 @@ def onboarding_dialog():
                     "full_name": name
                 }).execute()
                 
+                # Success Logic
                 st.success(T('success_setup'))
                 st.session_state["show_onboarding"] = False
                 time.sleep(1)
                 st.rerun()
             except Exception as e:
-                st.error(str(e))
+                # RLS Error handling just in case
+                if "42501" in str(e):
+                    st.error("Database permission error. Please contact admin.")
+                else:
+                    st.error(f"Profile Error: {e}")
         else:
             st.warning(T('fill_all'))
 
