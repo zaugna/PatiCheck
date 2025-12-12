@@ -29,6 +29,37 @@ if 'lang' not in st.session_state: st.session_state.lang = 'TR'
 
 TRANS = {
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
+    # --- UPDATED INTRO CARD ---
+    "intro_card": {
+        "TR": """
+        <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <h4 style="margin-top:0; color:#1A202C;">🐶 Hakkında</h4>
+            <p style="margin-bottom:15px;">
+                PatiCheck, evcil dostlarınızın aşı ve kilo takibini kolaylaştırmak için kişisel kullanım amacıyla geliştirilmiş 
+                <b>ücretsiz ve amatör</b> bir hobi projesidir.
+            </p>
+            <div style="display: inline-block; text-align: left;">
+                ✅ Aşı Takvimi ve E-posta Hatırlatmaları<br>
+                ✅ Kilo Takibi ve Grafikler<br>
+                ✅ Pet Fotoğraf Albümü
+            </div>
+        </div>
+        """,
+        "EN": """
+        <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <h4 style="margin-top:0; color:#1A202C;">🐶 About</h4>
+            <p style="margin-bottom:15px;">
+                PatiCheck is a <b>free, amateur</b> hobby project originally developed for personal use 
+                to simplify vaccine and weight tracking for your pets.
+            </p>
+            <div style="display: inline-block; text-align: left;">
+                ✅ Vaccine Schedule & Email Reminders<br>
+                ✅ Weight Tracking & Charts<br>
+                ✅ Pet Photo Album
+            </div>
+        </div>
+        """
+    },
     "login_tab": {"TR": "Giriş Yap", "EN": "Login"},
     "otp_tab": {"TR": "Kayıt / Şifremi Unuttum", "EN": "Register / Forgot Password"},
     "welcome_header": {"TR": "Hoşgeldiniz", "EN": "Welcome"},
@@ -309,6 +340,10 @@ def logout(): supabase.auth.sign_out(); st.session_state["user"] = None; st.reru
 # --- ENTRY ---
 if st.session_state["user"] is None:
     st.markdown("<br>", unsafe_allow_html=True); render_header(); st.markdown(f"<p style='text-align: center; color: #718096 !important; font-size: 1.2rem; margin-top: -10px;'>{T('app_slogan')}</p>", unsafe_allow_html=True); st.write("")
+    
+    # --- INTRO CARD & LOGIN CONTAINER ---
+    st.markdown(T("intro_card"), unsafe_allow_html=True)
+    
     with st.container():
         st.markdown('<div class="css-card">', unsafe_allow_html=True)
         c1, c2 = st.columns([4, 1])
