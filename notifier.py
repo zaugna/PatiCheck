@@ -167,8 +167,8 @@ today = date.today()
 print(f"Checking vaccines for {today}...")
 
 try:
-    # Updated Query: Fetch full_name from profiles
-    response = supabase.table("vaccinations").select("*, profiles(email, full_name)").execute()
+    # Updated Query: Fetch full_name AND secondary_email from profiles
+    response = supabase.table("vaccinations").select("*, profiles(email, full_name, secondary_email)").execute()
     rows = response.data
 except Exception as e:
     print(f"Database Error: {e}")
@@ -185,9 +185,16 @@ for row in rows:
         if days_left in NOTIFY_DAYS:
             if row['profiles'] and row['profiles'].get('email'):
                 email = row['profiles']['email']
-                # Get name safely
                 name = row['profiles'].get('full_name', '')
+                secondary_email = row['profiles'].get('secondary_email', '')
+                
+                # 1. Send to Primary
                 send_alert(email, name, row['pet_name'], row['vaccine_type'], due_str, days_left)
+                
+                # 2. Send to Secondary (if exists)
+                if secondary_email and "@" in secondary_email:
+                    print(f"Sending copy to secondary: {secondary_email}")
+                    send_alert(secondary_email, name, row['pet_name'], row['vaccine_type'], due_str, days_left)
             else:
                 print(f"No email found for user {row['user_id']}")
     except Exception as e:
