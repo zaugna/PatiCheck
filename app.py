@@ -8,6 +8,7 @@ from streamlit_option_menu import option_menu
 import os
 from PIL import Image
 import io
+import unicodedata
 
 # --- CONFIG ---
 st.set_page_config(page_title="PatiCheck", page_icon="🐾", layout="centered")
@@ -29,7 +30,6 @@ if 'lang' not in st.session_state: st.session_state.lang = 'TR'
 
 TRANS = {
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
-    # --- UPDATED INTRO CARD ---
     "intro_card": {
         "TR": """
         <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -154,6 +154,8 @@ TRANS = {
     "col_due": {"TR": "Bitiş", "EN": "Due"},
     "col_weight": {"TR": "Kg", "EN": "Kg"},
     "col_note": {"TR": "Not", "EN": "Note"},
+    "sec_email_label": {"TR": "İkincil Email (Eş/Partner)", "EN": "Secondary Email (Partner)"},
+    "sec_email_hint": {"TR": "Aşı bildirimleri bu adrese de gönderilecektir.", "EN": "Vaccine alerts will also be sent here."},
 }
 
 def T(key):
@@ -250,12 +252,17 @@ def get_user_name():
         return st.session_state["user"].email.split("@")[0]
     return ""
 
-# --- HELPER: CROP ---
+# --- HELPER: CROP & SANITIZE ---
 def crop_to_square(image):
     width, height = image.size
     new_size = min(width, height)
     left, top = (width - new_size)/2, (height - new_size)/2
     return image.crop((left, top, left + new_size, top + new_size))
+
+def sanitize_key(text):
+    # Normalize unicode characters to close ASCII (e.g. ö -> o, Ş -> S)
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
+    return text.strip().replace(" ", "_")
 
 # --- DIALOGS ---
 @st.dialog("Dialog") 
@@ -302,7 +309,9 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
                         img = crop_to_square(Image.open(photo_file))
                         buf = io.BytesIO()
                         img.save(buf, format="JPEG", quality=80)
-                        path = f"{st.session_state['user'].id}/{final_pet_name}/{int(time.time())}.jpg"
+                        # SANITIZE FILE PATH
+                        safe_pet = sanitize_key(final_pet_name)
+                        path = f"{st.session_state['user'].id}/{safe_pet}/{int(time.time())}.jpg"
                         supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"})
                         public_url = supabase.storage.from_("pet-photos").get_public_url(path)
                         supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": final_pet_name, "photo_url": public_url}).execute()
@@ -340,10 +349,7 @@ def logout(): supabase.auth.sign_out(); st.session_state["user"] = None; st.reru
 # --- ENTRY ---
 if st.session_state["user"] is None:
     st.markdown("<br>", unsafe_allow_html=True); render_header(); st.markdown(f"<p style='text-align: center; color: #718096 !important; font-size: 1.2rem; margin-top: -10px;'>{T('app_slogan')}</p>", unsafe_allow_html=True); st.write("")
-    
-    # --- INTRO CARD & LOGIN CONTAINER ---
     st.markdown(T("intro_card"), unsafe_allow_html=True)
-    
     with st.container():
         st.markdown('<div class="css-card">', unsafe_allow_html=True)
         c1, c2 = st.columns([4, 1])
@@ -445,7 +451,10 @@ else:
                                 file_id = f"{pet}_{up.name}_{up.size}"
                                 if file_id not in st.session_state.processed_files:
                                     try:
-                                        img = crop_to_square(Image.open(up)); buf = io.BytesIO(); img.save(buf, format="JPEG", quality=80); path = f"{st.session_state['user'].id}/{pet}/{int(time.time())}.jpg"
+                                        img = crop_to_square(Image.open(up)); buf = io.BytesIO(); img.save(buf, format="JPEG", quality=80)
+                                        # SANITIZE
+                                        safe_pet = sanitize_key(pet)
+                                        path = f"{st.session_state['user'].id}/{safe_pet}/{int(time.time())}.jpg"
                                         supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"}); url = supabase.storage.from_("pet-photos").get_public_url(path)
                                         supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": pet, "photo_url": url}).execute(); st.session_state.processed_files.append(file_id); st.rerun()
                                     except Exception as e: st.error(str(e))
@@ -459,7 +468,6 @@ else:
                         if len(p_df) > 0:
                             fig = go.Figure(); fig.add_trace(go.Scatter(x=p_df["date_applied"], y=p_df["weight"], mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'), marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)), fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)')); fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(showgrid=False, showline=False, color="#718096"), yaxis=dict(showgrid=True, gridcolor='#E2E8F0', color="#718096")); st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                 
-                # Close the card div
                 st.markdown('</div>', unsafe_allow_html=True)
 
     elif selected == T("nav_settings"):
@@ -467,6 +475,21 @@ else:
         l = st.selectbox("Dil / Language", ["TR", "EN"], index=0 if st.session_state.lang=='TR' else 1)
         if l != st.session_state.lang: st.session_state.lang = l; st.rerun()
         st.write(f"{T('logged_in_as')} {st.session_state['user'].email}")
+        
+        # --- SECONDARY EMAIL SETTING ---
+        try:
+            profile = supabase.table("profiles").select("*").eq("id", st.session_state["user"].id).single().execute()
+            current_sec = profile.data.get("secondary_email", "") if profile.data else ""
+        except: current_sec = ""
+        
+        c_sec1, c_sec2 = st.columns([3,1])
+        with c_sec1: sec_email = st.text_input(T("sec_email_label"), value=current_sec, help=T("sec_email_hint"))
+        with c_sec2:
+            st.write(""); st.write("")
+            if st.button(T("save_btn"), key="save_sec"):
+                supabase.table("profiles").update({"secondary_email": sec_email}).eq("id", st.session_state["user"].id).execute()
+                st.success("Kaydedildi!")
+
         if st.button(T("logout_btn"), type="secondary"): logout()
         st.write("---")
         with st.expander(T("change_pass_exp")):
