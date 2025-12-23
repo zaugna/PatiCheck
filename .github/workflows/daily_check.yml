@@ -1,25 +1,35 @@
-name: Daily Check
+name: PatiCheck Daily Service
+
 on:
   schedule:
-    - cron: '45 5 * * *' # 08:45 AM Istanbul
-  workflow_dispatch:
+    # Runs at 06:00 UTC (09:00 TRT) every day
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Adds a "Run Now" button in GitHub Actions tab for testing
 
 jobs:
-  run-bot:
+  run-services:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-      
-      # FIX: Added 'requests' to the installation list
-      - run: pip install pandas supabase requests
 
-      - run: python notifier.py
+      - name: Install Dependencies
+        # We need supabase for the DB and requests for the "Wake Up" ping
+        run: |
+          pip install supabase requests
+
+      - name: Run Notifier & Wake Up Call
+        # We pass the secrets here so python can access them
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          APP_URL: ${{ secrets.APP_URL }}
+          # This URL is critical for the "Wake Up" fix
+          APP_URL: "https://paticheck.streamlit.app" 
+        run: python notifier.py
