@@ -31,34 +31,8 @@ if 'lang' not in st.session_state: st.session_state.lang = 'TR'
 TRANS = {
     "app_slogan": {"TR": "Evcil hayvanlarınızın sağlığı, kontrol altında.", "EN": "Your pets' health, under control."},
     "intro_card": {
-        "TR": """
-        <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-            <h4 style="margin-top:0; color:#1A202C;">🐶 Hakkında</h4>
-            <p style="margin-bottom:15px;">
-                PatiCheck, evcil dostlarınızın aşı ve kilo takibini kolaylaştırmak için kişisel kullanım amacıyla geliştirilmiş 
-                <b>ücretsiz ve amatör</b> bir hobi projesidir.
-            </p>
-            <div style="display: inline-block; text-align: left;">
-                ✅ Aşı Takvimi ve E-posta Hatırlatmaları<br>
-                ✅ Kilo Takibi ve Grafikler<br>
-                ✅ Pet Fotoğraf Albümü
-            </div>
-        </div>
-        """,
-        "EN": """
-        <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-            <h4 style="margin-top:0; color:#1A202C;">🐶 About</h4>
-            <p style="margin-bottom:15px;">
-                PatiCheck is a <b>free, amateur</b> hobby project originally developed for personal use 
-                to simplify vaccine and weight tracking for your pets.
-            </p>
-            <div style="display: inline-block; text-align: left;">
-                ✅ Vaccine Schedule & Email Reminders<br>
-                ✅ Weight Tracking & Charts<br>
-                ✅ Pet Photo Album
-            </div>
-        </div>
-        """
+        "TR": """<div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);"><h4 style="margin-top:0; color:#1A202C;">🐶 Hakkında</h4><p style="margin-bottom:15px;">PatiCheck, evcil dostlarınızın aşı ve kilo takibini kolaylaştırmak için kişisel kullanım amacıyla geliştirilmiş <b>ücretsiz ve amatör</b> bir hobi projesidir.</p><div style="display: inline-block; text-align: left;">✅ Aşı Takvimi ve E-posta Hatırlatmaları<br>✅ Kilo Takibi ve Grafikler<br>✅ Pet Fotoğraf Albümü</div></div>""",
+        "EN": """<div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; color: #4A5568; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);"><h4 style="margin-top:0; color:#1A202C;">🐶 About</h4><p style="margin-bottom:15px;">PatiCheck is a <b>free, amateur</b> hobby project originally developed for personal use to simplify vaccine and weight tracking for your pets.</p><div style="display: inline-block; text-align: left;">✅ Vaccine Schedule & Email Reminders<br>✅ Weight Tracking & Charts<br>✅ Pet Photo Album</div></div>"""
     },
     "login_tab": {"TR": "Giriş Yap", "EN": "Login"},
     "otp_tab": {"TR": "Kayıt / Şifremi Unuttum", "EN": "Register / Forgot Password"},
@@ -98,6 +72,7 @@ TRANS = {
     "days_ok": {"TR": "GÜN VAR", "EN": "DAYS LEFT"},
     "no_urgent": {"TR": "Harika! Önümüzdeki 7 gün içinde acil bir durum yok.", "EN": "Great! No urgent items in the next 7 days."},
     "add_vac_btn": {"TR": "Aşı Ekle", "EN": "Add Vax"},
+    "quick_update_btn": {"TR": "💉 Güncelle", "EN": "💉 Update"},
     "details_expander": {"TR": "Detayları Göster", "EN": "Show Details"},
     "tab_general": {"TR": "Genel", "EN": "General"},
     "tab_history": {"TR": "Geçmiş", "EN": "History"},
@@ -202,6 +177,9 @@ st.markdown("""
     div.stButton > button[kind="primary"] { background-color: #FF6B6B !important; color: white !important; border: none !important; box-shadow: 0 4px 6px rgba(255,107,107,0.25) !important; }
     div.stButton > button[kind="primary"]:hover { background-color: #FA5252 !important; transform: scale(1.01); color: white !important; }
     
+    /* Specific styling for small buttons inside cards */
+    button[kind="secondary"] { height: 38px !important; }
+
     .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: none; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; background-color: #FFFFFF; border-radius: 20px; color: #718096; border: 1px solid #E2E8F0; font-weight: 600; flex: 1 1 auto; }
     .stTabs [aria-selected="true"] { background-color: #FF6B6B; color: white !important; border: none; }
@@ -260,28 +238,51 @@ def crop_to_square(image):
     return image.crop((left, top, left + new_size, top + new_size))
 
 def sanitize_key(text):
-    # Normalize unicode characters to close ASCII (e.g. ö -> o, Ş -> S)
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
     return text.strip().replace(" ", "_")
 
 # --- DIALOGS ---
 @st.dialog("Dialog") 
-def add_vaccine_dialog(existing_pets, default_pet=None):
+def add_vaccine_dialog(existing_pets, default_pet=None, default_vac=None):
     st.markdown(f"### {T('dialog_title')}")
-    index = existing_pets.index(default_pet) + 1 if default_pet and default_pet in existing_pets else 0
+    
+    # Pre-select pet logic
+    index = 0
+    if default_pet and default_pet in existing_pets:
+        index = existing_pets.index(default_pet) + 1 
+    
     options = [T("opt_new_pet")] + existing_pets
     sel = st.selectbox(T("label_pet"), options, index=index)
+    
     final_pet_name = st.text_input(T("label_pet_name"), placeholder=T("ph_pet_name")) if sel == T("opt_new_pet") else sel
 
+    # Photo Upload (Only for New Pets)
     photo_file = None
     if sel == T("opt_new_pet"):
         photo_file = st.file_uploader(T("upload_optional"), type=['png', 'jpg', 'jpeg'])
 
+    # Determine default weight if pet exists
+    default_w = 0.0
+    if sel != T("opt_new_pet"):
+        try:
+            # Query last weight
+            rows = supabase.table("vaccinations").select("weight").eq("user_id", st.session_state["user"].id).eq("pet_name", sel).order("date_applied", desc=True).limit(1).execute()
+            if rows.data:
+                default_w = float(rows.data[0]['weight'])
+        except:
+            pass
+
     c1, c2 = st.columns(2)
     with c1:
-        vac = st.selectbox(T("label_vac"), [T("vac_karma"), T("vac_rabies"), T("vac_leukemia"), T("vac_internal"), T("vac_external"), T("vac_kc"), T("vac_lyme"), T("vac_checkup")])
+        # Pre-select vaccine if provided (e.g. from Dashboard Update)
+        vac_opts = [T("vac_karma"), T("vac_rabies"), T("vac_leukemia"), T("vac_internal"), T("vac_external"), T("vac_kc"), T("vac_lyme"), T("vac_checkup")]
+        vac_idx = 0
+        if default_vac:
+            try: vac_idx = vac_opts.index(default_vac)
+            except: vac_idx = 0
+        vac = st.selectbox(T("label_vac"), vac_opts, index=vac_idx)
     with c2:
-        w = st.number_input(T("label_weight"), step=0.1, value=0.0)
+        w = st.number_input(T("label_weight"), step=0.1, value=default_w)
 
     d1 = st.date_input(T("label_date"))
     mode = st.radio(T("label_mode"), [T("opt_auto"), T("opt_manual")], horizontal=True, label_visibility="collapsed")
@@ -291,7 +292,8 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         dur = st.pills(T("label_validity"), [T("pill_1m"), T("pill_2m"), T("pill_3m"), T("pill_1y")], default=T("pill_1y"))
         if dur:
             val = int(dur.split()[0])
-            d2 = d1 + timedelta(days=(val * 30 if "Ay" in dur or "Mo" in dur else val * 365))
+            days = val * 30 if "Ay" in dur or "Mo" in dur else val * 365
+            d2 = d1 + timedelta(days=days)
             st.caption(f"{T('caption_next')} {d2.strftime('%d.%m.%Y')}")
         else: st.info(T("warn_date")); d2 = None
     else:
@@ -304,12 +306,12 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
         elif d2 is None: st.error(T("warn_date"))
         else:
             try:
+                # 1. Photo Upload
                 if photo_file:
                     try:
                         img = crop_to_square(Image.open(photo_file))
                         buf = io.BytesIO()
                         img.save(buf, format="JPEG", quality=80)
-                        # SANITIZE FILE PATH
                         safe_pet = sanitize_key(final_pet_name)
                         path = f"{st.session_state['user'].id}/{safe_pet}/{int(time.time())}.jpg"
                         supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"})
@@ -317,6 +319,7 @@ def add_vaccine_dialog(existing_pets, default_pet=None):
                         supabase.table("pet_photos").insert({"user_id": st.session_state['user'].id, "pet_name": final_pet_name, "photo_url": public_url}).execute()
                     except Exception as e: st.error(f"Foto Hatası: {e}")
 
+                # 2. Save Vaccine
                 supabase.table("vaccinations").insert({"user_id": st.session_state["user"].id, "pet_name": final_pet_name, "vaccine_type": vac, "date_applied": str(d1), "next_due_date": str(d2), "weight": w, "notes": notes}).execute()
                 st.success(T("success_save")); time.sleep(0.5); st.rerun()
             except Exception as e: st.error(f"Hata: {e}")
@@ -385,23 +388,70 @@ else:
 
     if selected == T("nav_home"):
         c1, c2 = st.columns([2.5, 1.2]); c1.subheader(f"{T('hello')} {get_user_name()}")
-        if c2.button(T("add_main_btn"), type="primary"): existing = list(df["pet_name"].unique()) if not df.empty else []; add_vaccine_dialog(existing)
+        
+        # Add Pet Button
+        existing_pets = list(df["pet_name"].unique()) if not df.empty else []
+        if c2.button(T("add_main_btn"), type="primary"): 
+            add_vaccine_dialog(existing_pets)
+
         if df.empty: st.info(T("empty_home"))
         else:
-            df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date; today = date.today()
+            df["next_due_date"] = pd.to_datetime(df["next_due_date"]).dt.date
+            today = date.today()
+            
+            # --- SMART LOGIC: Get latest status per pet/vaccine ---
+            df_sorted = df.sort_values("date_applied", ascending=False)
+            latest_status = df_sorted.drop_duplicates(subset=["pet_name", "vaccine_type"], keep="first")
+            
+            # Metrics
             k1, k2, k3 = st.columns(3)
             def styled_metric(label, value, color="#1A202C"): st.markdown(f"""<div style="background:white; padding:15px; border-radius:12px; border:1px solid #E2E8F0; text-align:center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"><div style="color:#718096; font-size:12px; font-weight:700; margin-bottom:5px; text-transform:uppercase;">{label}</div><div style="color:{color}; font-size:26px; font-weight:800;">{value}</div></div>""", unsafe_allow_html=True)
             with k1: styled_metric(T("metric_total"), df['pet_name'].nunique())
-            with k2: styled_metric(T("metric_upcoming"), len(df[df["next_due_date"] > today]))
-            with k3: styled_metric(T("metric_overdue"), len(df[df["next_due_date"] < today]), "#FF4B4B")
-            st.write(""); st.write(""); urgent = df[df["next_due_date"] <= (today + timedelta(days=7))].sort_values("next_due_date")
+            
+            # Filter latest status for upcoming/overdue
+            upcoming = latest_status[latest_status["next_due_date"] > today]
+            overdue = latest_status[latest_status["next_due_date"] < today]
+            
+            with k2: styled_metric(T("metric_upcoming"), len(upcoming))
+            with k3: styled_metric(T("metric_overdue"), len(overdue), "#FF4B4B")
+            
+            st.write(""); st.write("")
+            
+            # Show Urgent (Overdue + Next 7 Days)
+            urgent = latest_status[latest_status["next_due_date"] <= (today + timedelta(days=7))].sort_values("next_due_date")
+            
             if not urgent.empty:
                 st.caption(T("urgent_header"))
                 for _, row in urgent.iterrows():
                     days = (row['next_due_date'] - today).days
-                    colors = ("#FFF5F5", "#C53030") if days < 0 else ("#FFFAF0", "#C05621") if days <= 3 else ("#F0FFF4", "#2F855A")
-                    msg = f"{abs(days)} {T('day_passed') if abs(days)==1 else T('days_passed')}" if days < 0 else f"{days} {T('day_left') if days==1 else T('days_left')}" if days <=3 else f"{days} {T('day_left') if days==1 else T('days_ok')}"
-                    st.markdown(f"""<div style="background-color: {colors[0]}; border: 1px solid {colors[1]}30; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;"><div><div style="color: #1A202C; font-weight: bold; font-size: 16px;">{row['pet_name']}</div><div style="color: #4A5568; font-size: 14px;">{row['vaccine_type']}</div></div><div style="text-align: right;"><div style="color: {colors[1]}; font-weight: 800; font-size: 13px;">{msg}</div><div style="color: #718096; font-size: 12px;">{row['next_due_date'].strftime('%d.%m.%Y')}</div></div></div>""", unsafe_allow_html=True)
+                    if days < 0:
+                        colors = ("#FFF5F5", "#C53030"); msg = f"{abs(days)} {T('day_passed') if abs(days)==1 else T('days_passed')}"
+                    elif days <= 3:
+                        colors = ("#FFFAF0", "#C05621"); msg = f"{days} {T('day_left') if days==1 else T('days_left')}"
+                    else:
+                        colors = ("#F0FFF4", "#2F855A"); msg = f"{days} {T('day_left') if days==1 else T('days_ok')}"
+                    
+                    # Alert Card
+                    st.markdown(f"""
+                    <div style="background-color: {colors[0]}; border: 1px solid {colors[1]}30; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: #1A202C; font-weight: bold; font-size: 16px;">{row['pet_name']}</div>
+                            <div style="color: #4A5568; font-size: 14px;">{row['vaccine_type']}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: {colors[1]}; font-weight: 800; font-size: 13px;">{msg}</div>
+                            <div style="color: #718096; font-size: 12px;">{row['next_due_date'].strftime('%d.%m.%Y')}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Quick Update Button (Outside HTML, inside Streamlit layout)
+                    # We use columns to right-align it slightly
+                    b1, b2 = st.columns([4, 1])
+                    with b2:
+                        if st.button(T("quick_update_btn"), key=f"upd_{row['id']}", type="secondary"):
+                            add_vaccine_dialog(existing_pets, default_pet=row['pet_name'], default_vac=row['vaccine_type'])
+                    st.write("") # Spacer
             else: st.success(T("no_urgent"))
 
     elif selected == T("nav_profiles"):
@@ -413,9 +463,7 @@ else:
             for pet in pets:
                 p_df = df[df["pet_name"] == pet].sort_values("date_applied"); p_photos = photos_df[photos_df["pet_name"] == pet].sort_values("created_at", ascending=False) if not photos_df.empty else pd.DataFrame()
                 
-                # --- START OF PET CARD ---
                 st.markdown('<div class="css-card">', unsafe_allow_html=True)
-                
                 c1, c2 = st.columns([2.5, 1.2])
                 with c1:
                     if not p_photos.empty:
@@ -431,8 +479,11 @@ else:
                         col_a, col_b = st.columns(2)
                         last_w = p_df.iloc[-1]['weight'] if 'weight' in p_df.columns else 0.0
                         col_a.metric(T("metric_weight"), f"{last_w} kg")
-                        if not p_df[p_df["next_due_date"] >= date.today()].empty:
-                            nxt = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date").iloc[0]
+                        
+                        # Fix: General tab also needs smart logic
+                        future_vax = p_df[p_df["next_due_date"] >= date.today()].sort_values("next_due_date")
+                        if not future_vax.empty:
+                            nxt = future_vax.iloc[0]
                             col_b.metric(T("metric_next"), nxt['vaccine_type'], nxt['next_due_date'].strftime('%d.%m'))
                         else: col_b.metric(T("metric_next"), "-")
                         
@@ -452,7 +503,6 @@ else:
                                 if file_id not in st.session_state.processed_files:
                                     try:
                                         img = crop_to_square(Image.open(up)); buf = io.BytesIO(); img.save(buf, format="JPEG", quality=80)
-                                        # SANITIZE
                                         safe_pet = sanitize_key(pet)
                                         path = f"{st.session_state['user'].id}/{safe_pet}/{int(time.time())}.jpg"
                                         supabase.storage.from_("pet-photos").upload(path, buf.getvalue(), {"content-type": "image/jpeg"}); url = supabase.storage.from_("pet-photos").get_public_url(path)
@@ -467,7 +517,6 @@ else:
                     with t3:
                         if len(p_df) > 0:
                             fig = go.Figure(); fig.add_trace(go.Scatter(x=p_df["date_applied"], y=p_df["weight"], mode='lines+markers', line=dict(color='#FF6B6B', width=3, shape='spline'), marker=dict(size=8, color='white', line=dict(color='#FF6B6B', width=2)), fill='tozeroy', fillcolor='rgba(255, 107, 107, 0.1)')); fig.update_layout(height=250, margin=dict(t=10,b=0,l=0,r=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(showgrid=False, showline=False, color="#718096"), yaxis=dict(showgrid=True, gridcolor='#E2E8F0', color="#718096")); st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                
                 st.markdown('</div>', unsafe_allow_html=True)
 
     elif selected == T("nav_settings"):
@@ -476,19 +525,16 @@ else:
         if l != st.session_state.lang: st.session_state.lang = l; st.rerun()
         st.write(f"{T('logged_in_as')} {st.session_state['user'].email}")
         
-        # --- SECONDARY EMAIL SETTING ---
         try:
             profile = supabase.table("profiles").select("*").eq("id", st.session_state["user"].id).single().execute()
             current_sec = profile.data.get("secondary_email", "") if profile.data else ""
         except: current_sec = ""
-        
         c_sec1, c_sec2 = st.columns([3,1])
         with c_sec1: sec_email = st.text_input(T("sec_email_label"), value=current_sec, help=T("sec_email_hint"))
         with c_sec2:
             st.write(""); st.write("")
             if st.button(T("save_btn"), key="save_sec"):
-                supabase.table("profiles").update({"secondary_email": sec_email}).eq("id", st.session_state["user"].id).execute()
-                st.success("Kaydedildi!")
+                supabase.table("profiles").update({"secondary_email": sec_email}).eq("id", st.session_state["user"].id).execute(); st.success("Kaydedildi!")
 
         if st.button(T("logout_btn"), type="secondary"): logout()
         st.write("---")
