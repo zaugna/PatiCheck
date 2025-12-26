@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs at 06:00 UTC every day
     - cron: '0 6 * * *'
-  workflow_dispatch: # Allows you to click "Run Now" to test
+  workflow_dispatch:
 
 jobs:
   run-services:
@@ -22,13 +22,12 @@ jobs:
         run: |
           pip install supabase requests
 
-      # THIS IS THE PART THAT WAS LIKELY MISSING OR MISMATCHED
       - name: Run Notifier
         env:
-          # The Name on the LEFT must match what Python expects (os.environ["..."])
-          # The Name on the RIGHT must match your GitHub Secret Name
+          # We pass these to the script
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_KEY }} 
+          # We try BOTH names to be safe. If one is missing, it tries the other.
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_KEY || secrets.SUPABASE_SERVICE_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           APP_URL: "https://paticheck.streamlit.app"
