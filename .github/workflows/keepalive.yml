@@ -1,0 +1,24 @@
+name: Anti-Freeze Protocol
+
+on:
+  schedule:
+    # Run at 00:00 on the 1st day of every month
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Dummy Commit
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          date > last_run_date.txt
+          git add last_run_date.txt
+          git commit -m "Auto-commit to keep repo active"
+          git push
