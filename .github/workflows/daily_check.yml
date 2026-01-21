@@ -2,8 +2,8 @@ name: PatiCheck Daily Service
 
 on:
   schedule:
-    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
-    - cron: '0 */6 * * *'
+    # Runs every 15 minutes (Keeps app awake, Emails only at 09:00 TRT)
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -24,9 +24,7 @@ jobs:
 
       - name: Run Notifier
         env:
-          # We pass these to the script
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          # We try BOTH names to be safe. If one is missing, it tries the other.
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_KEY || secrets.SUPABASE_SERVICE_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
