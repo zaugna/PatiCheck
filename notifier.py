@@ -7,8 +7,14 @@ from datetime import date, datetime
 import requests
 import time
 
-# --- 1. WAKE UP CALL (PRIORITY) ---
+# --- CONFIGURATION ---
+# GitHub Servers run in UTC. 
+# 06:00 UTC = 09:00 TRT (Turkey Time)
+EMAIL_HOUR_UTC = 6 
+
+# --- 1. WAKE UP CALL (ALWAYS RUNS) ---
 APP_URL = os.environ.get("APP_URL", "https://paticheck.streamlit.app")
+print(f"⏰ Tick Tock... It is {datetime.utcnow().strftime('%H:%M')} UTC.")
 print(f"Pinging {APP_URL}...")
 try:
     requests.get(APP_URL, timeout=10)
@@ -16,7 +22,15 @@ try:
 except Exception as e:
     print(f"⚠️ Ping failed: {e}")
 
-# --- 2. SETUP ---
+# --- 2. TIME CHECK ---
+current_hour = datetime.utcnow().hour
+if current_hour != EMAIL_HOUR_UTC:
+    print(f"💤 Not email time yet (Target: {EMAIL_HOUR_UTC}:00 UTC). Going back to sleep.")
+    exit(0) # STOP HERE if it's not 9:00 AM TRT
+
+print("🔔 It is Email Time! Checking database...")
+
+# --- 3. DATABASE SETUP (Only runs at 09:00 TRT) ---
 try:
     SUPA_URL = os.environ["SUPABASE_URL"]
     SUPA_KEY = os.environ["SUPABASE_SERVICE_KEY"] 
@@ -39,12 +53,10 @@ def send_alert(to_email, name, pet, vaccine, due_date, days_left):
     vaccine_clean = clean_text(vaccine)
     greeting = f"Merhaba {name}," if name else "Merhaba / Hello,"
     
-    # Calendar Link
     start = due_date.replace("-","") + "T090000"
     end = due_date.replace("-","") + "T091500"
     gcal_link = f"https://www.google.com/calendar/render?action=TEMPLATE&text={pet_clean}-{vaccine_clean}&dates={start}/{end}&details=PatiCheck&sf=true&output=xml"
     
-    # Logic
     if days_left < 0:
         color = "#D93025" 
         bg_color = "#FCE8E6"
@@ -118,7 +130,7 @@ def send_alert(to_email, name, pet, vaccine, due_date, days_left):
     except Exception as e:
         print(f"❌ Error sending to {to_email}: {e}")
 
-# --- 3. MAIN LOOP ---
+# --- 4. CHECK VACCINES ---
 today = date.today()
 print(f"Checking vaccines for {today}...")
 
@@ -130,7 +142,6 @@ except Exception as e:
     rows = []
 
 NOTIFY_DAYS = [7, 3, 1, 0, -3, -7]
-
 sent_count = 0
 
 for row in rows:
@@ -145,11 +156,9 @@ for row in rows:
                 name = row['profiles'].get('full_name', '')
                 sec_email = row['profiles'].get('secondary_email', '')
                 
-                # Send Primary
                 send_alert(email, name, row['pet_name'], row['vaccine_type'], due_str, days_left)
                 sent_count += 1
                 
-                # Send Secondary
                 if sec_email and "@" in sec_email:
                     send_alert(sec_email, name, row['pet_name'], row['vaccine_type'], due_str, days_left)
                     sent_count += 1
